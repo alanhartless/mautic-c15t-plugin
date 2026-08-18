@@ -2,8 +2,8 @@
 
 namespace MauticPlugin\MauticC15tBundle;
 
-use Mautic\PluginBundle\Bundle\PluginBundleBase;
+use Mautic\IntegrationsBundle\Bundle\AbstractPluginBundle;
 
-class MauticC15tBundle extends PluginBundleBase
+class MauticC15tBundle extends AbstractPluginBundle
 {
 }

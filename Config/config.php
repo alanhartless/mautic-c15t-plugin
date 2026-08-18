@@ -25,8 +25,8 @@ foreach ((new MauticPlugin\MauticC15tBundle\Service\IntegrationRegistry())->getP
 
 return [
     'name'        => 'c15t Consent Manager',
-    'description' => 'Self-hosted consent management (c15t) -- serves one embeddable loader script per site, gates Mautic tracking on consent, manages per-site script-loader integrations.',
-    'version'     => '1.0',
+    'description' => 'c15t consent manager integration. Requires a self-hosted backend.',
+    'version'     => '1.0.1',
     'author'      => 'Alan Hartless',
 
     // Defaults for the Configuration -> Consent Manager (c15t) screen's
