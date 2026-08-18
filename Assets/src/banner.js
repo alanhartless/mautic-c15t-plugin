@@ -83,8 +83,20 @@ function trapFocus(container, returnFocusTo) {
   };
 
   container.addEventListener('keydown', onKeydown);
-  const items = focusable();
-  if (items.length > 0) items[0].focus();
+  // Deferred to the next frame -- calling .focus() synchronously in the
+  // same tick `container` was inserted into the DOM (render() just did
+  // root.innerHTML = '' + appendChild in the same pass) silently failed
+  // to take effect in practice: the Tab-cycling logic above worked fine
+  // once focus was inside (e.g. via a manual click), confirming the trap
+  // itself was never the problem -- only this initial placement, which
+  // needs the browser to finish layout/paint on the newly-inserted
+  // element first. requestAnimationFrame guarantees that ordering;
+  // queueMicrotask/setTimeout(0) does not (they can still fire before
+  // the browser's next paint).
+  requestAnimationFrame(() => {
+    const items = focusable();
+    if (items.length > 0) items[0].focus();
+  });
 
   return () => {
     container.removeEventListener('keydown', onKeydown);
