@@ -1,7 +1,7 @@
 {
   "name": "mautic-c15t-plugin",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Build tooling for Assets/build/consent-bundle.js -- the client-side banner UI + pre-bundled c15t script-loader integrations this plugin serves at /consent.js. The PHP plugin itself has no npm dependency; this only builds that one static asset.",
   "type": "module",
   "scripts": {

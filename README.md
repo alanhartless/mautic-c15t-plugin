@@ -111,6 +111,28 @@ present regardless of that setting: `[data-wd-consent-banner]`,
 `[data-wd-consent-actions]`, `[data-wd-consent-primary]`,
 `[data-wd-consent-category]`.
 
+### Reopening the banner after a visitor has already decided
+
+The banner only shows once, by design -- after a visitor picks
+"Necessary only"/"Accept all"/saves custom preferences, `/consent.js`
+mounts nothing on later page loads. To give visitors a way to change their
+mind later (a footer "Cookie Settings" link, for example), you need one of:
+
+- **No JS needed** -- add `data-wd-consent-trigger` to any element:
+
+  ```html
+  <a href="#" data-wd-consent-trigger>Cookie Settings</a>
+  ```
+
+- **Programmatic** -- call the same thing from your own JS:
+
+  ```js
+  window.wdConsent.openPreferences();
+  ```
+
+Both re-open the preferences dialog (not the banner) with the visitor's
+existing choices pre-filled.
+
 ## Supported packaged integrations
 
 | Key | Vendor | Required params |
