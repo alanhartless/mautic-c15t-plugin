@@ -5,26 +5,21 @@ declare(strict_types=1);
 namespace MauticPlugin\MauticC15tBundle\Integration;
 
 use Mautic\IntegrationsBundle\Integration\BasicIntegration;
-use Mautic\IntegrationsBundle\Integration\ConfigurationTrait;
 use Mautic\IntegrationsBundle\Integration\Interfaces\BasicInterface;
 
 class ConsentIntegration extends BasicIntegration implements BasicInterface
 {
-    use ConfigurationTrait;
+    public const NAME         = 'c15t';
+    public const DISPLAY_NAME = 'Consent Manager (c15t)';
 
     public function getName(): string
     {
-        return 'c15t';
+        return self::NAME;
     }
 
     public function getDisplayName(): string
     {
-        return 'Consent Manager (c15t)';
-    }
-
-    public function getAuthenticationType(): string
-    {
-        return 'none';
+        return self::DISPLAY_NAME;
     }
 
     public function getIcon(): string

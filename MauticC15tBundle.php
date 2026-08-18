@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace MauticPlugin\MauticC15tBundle;
 
-use Mautic\IntegrationsBundle\Bundle\AbstractPluginBundle;
+use Mautic\PluginBundle\Bundle\PluginBundleBase;
 
-class MauticC15tBundle extends AbstractPluginBundle
+final class MauticC15tBundle extends PluginBundleBase
 {
 }
