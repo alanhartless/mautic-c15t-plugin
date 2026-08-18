@@ -93,7 +93,7 @@ That's the entire integration -- no other markup, JS, or build step is
 needed on the site itself. Once that tag is in place:
 
 - The banner (or, once a visitor has already decided, nothing) mounts
-  itself automatically into a `<div id="wd-consent-root">` it creates.
+  itself automatically into a `<div id="ccm-root">` it creates.
 - Every script this instance is configured to load (Mautic's own tracking,
   GA4/GTM, pixels, anything in "Advanced: custom scripts") only actually
   loads once a visitor consents to its category -- there's nothing further
@@ -122,25 +122,25 @@ properties -- override any of these on the site without touching
 
 ```css
 :root {
-  --wd-consent-bg: #ffffff;
-  --wd-consent-fg: #111827;
-  --wd-consent-muted: #6b7280;
-  --wd-consent-border: #e5e7eb;
-  --wd-consent-primary: #111827;
-  --wd-consent-primary-fg: #ffffff;
-  --wd-consent-radius: 12px;
-  --wd-consent-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
-  --wd-consent-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  --ccm-bg: #ffffff;
+  --ccm-fg: #111827;
+  --ccm-muted: #6b7280;
+  --ccm-border: #e5e7eb;
+  --ccm-primary: #111827;
+  --ccm-primary-fg: #ffffff;
+  --ccm-radius: 12px;
+  --ccm-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
+  --ccm-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
 }
 ```
 
 For anything beyond variables, turn on "Disable default banner styling" in
 Configuration -> Consent Manager (c15t) and style the markup directly --
-the same `data-wd-consent-*` hooks the default CSS targets are always
-present regardless of that setting: `[data-wd-consent-banner]`,
-`[data-wd-consent-dialog]`, `[data-wd-consent-overlay]`,
-`[data-wd-consent-actions]`, `[data-wd-consent-primary]`,
-`[data-wd-consent-category]`.
+the same `data-ccm-*` hooks the default CSS targets are always
+present regardless of that setting: `[data-ccm-banner]`,
+`[data-ccm-dialog]`, `[data-ccm-overlay]`,
+`[data-ccm-actions]`, `[data-ccm-primary]`,
+`[data-ccm-category]`.
 
 ### Reopening the banner after a visitor has already decided
 
@@ -149,16 +149,16 @@ The banner only shows once, by design -- after a visitor picks
 mounts nothing on later page loads. To give visitors a way to change their
 mind later (a footer "Cookie Settings" link, for example), you need one of:
 
-- **No JS needed** -- add `data-wd-consent-trigger` to any element:
+- **No JS needed** -- add `data-ccm-trigger` to any element:
 
   ```html
-  <a href="#" data-wd-consent-trigger>Cookie Settings</a>
+  <a href="#" data-ccm-trigger>Cookie Settings</a>
   ```
 
 - **Programmatic** -- call the same thing from your own JS:
 
   ```js
-  window.wdConsent.openPreferences();
+  window.ccm.openPreferences();
   ```
 
 Both re-open the preferences dialog (not the banner) with the visitor's
@@ -166,7 +166,7 @@ existing choices pre-filled.
 
 ### Resetting consent (testing)
 
-`window.wdConsent.resetConsents()` clears a visitor's saved preferences
+`window.ccm.resetConsents()` clears a visitor's saved preferences
 back to the unset default, so the banner shows again on the next load --
 the documented way to force a fresh banner while testing, without needing
 to manually clear cookies/storage (which, in hosted mode, may not even be

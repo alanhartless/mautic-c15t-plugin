@@ -96,18 +96,18 @@ if (!siteConfig) {
   // (unlike 'banner', which only re-shows unprompted if `force: true` is
   // passed -- see c15t's own store implementation, node_modules/c15t/
   // dist/index.js's setActiveUI), so no options are needed here.
-  window.wdConsent = {
+  window.ccm = {
     openPreferences: () => consentStore.getState().setActiveUI('dialog'),
     // Lets an embedding app link its own logged-in user identity to the
     // anonymous consent record once authenticated
     // (c15t.com/docs/frameworks/javascript/api/location-info#identifyuseruser)
-    // -- e.g. window.wdConsent.identifyUser({ id, identityProvider }) from
+    // -- e.g. window.ccm.identifyUser({ id, identityProvider }) from
     // the app's own auth-success handler. Only meaningful once a visitor
     // has actually authenticated; not called from anywhere in this bundle
     // itself.
     identifyUser: (user) => consentStore.getState().identifyUser(user),
     // Resets consent preferences to their default (unset) state -- for
-    // testing: window.wdConsent.resetConsents() in the console re-triggers
+    // testing: window.ccm.resetConsents() in the console re-triggers
     // the banner on next load without needing to manually clear cookies/
     // storage. c15t's own troubleshooting docs list this as the documented
     // way to force a fresh banner during testing.
@@ -115,13 +115,13 @@ if (!siteConfig) {
   };
 
   // Declarative trigger -- lets a site add a plain
-  // `<a href="#" data-wd-consent-trigger>Cookie Settings</a>` with no JS
+  // `<a href="#" data-ccm-trigger>Cookie Settings</a>` with no JS
   // of its own. One delegated listener (not per-element) so it also picks
   // up triggers added to the page after this bundle has already run.
   document.addEventListener('click', (event) => {
-    const trigger = event.target.closest('[data-wd-consent-trigger]');
+    const trigger = event.target.closest('[data-ccm-trigger]');
     if (!trigger) return;
     event.preventDefault();
-    window.wdConsent.openPreferences();
+    window.ccm.openPreferences();
   });
 }

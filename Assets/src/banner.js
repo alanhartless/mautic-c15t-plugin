@@ -44,9 +44,9 @@ const CATEGORY_INFO = {
 let stylesInjected = false;
 
 function injectStyles() {
-  if (stylesInjected || document.getElementById('wd-consent-styles')) return;
+  if (stylesInjected || document.getElementById('ccm-styles')) return;
   const style = document.createElement('style');
-  style.id = 'wd-consent-styles';
+  style.id = 'ccm-styles';
   style.textContent = DEFAULT_CSS;
   document.head.appendChild(style);
   stylesInjected = true;
@@ -107,11 +107,11 @@ export function mountConsentUI(consentStore, options = {}) {
   } = options;
   if (!disableDefaultCss) injectStyles();
 
-  let root = document.getElementById('wd-consent-root');
+  let root = document.getElementById('ccm-root');
   if (!root) {
     root = document.createElement('div');
-    root.id = 'wd-consent-root';
-    root.setAttribute('data-wd-consent', '');
+    root.id = 'ccm-root';
+    root.setAttribute('data-ccm', '');
     document.body.appendChild(root);
   }
 
@@ -137,18 +137,18 @@ export function mountConsentUI(consentStore, options = {}) {
     lastFocused = document.activeElement;
 
     const banner = document.createElement('div');
-    banner.setAttribute('data-wd-consent-banner', '');
+    banner.setAttribute('data-ccm-banner', '');
     banner.setAttribute('role', 'dialog');
     banner.setAttribute('aria-label', 'Cookie consent');
-    banner.setAttribute('aria-describedby', 'wd-consent-banner-text');
+    banner.setAttribute('aria-describedby', 'ccm-banner-text');
 
     const text = document.createElement('p');
-    text.id = 'wd-consent-banner-text';
+    text.id = 'ccm-banner-text';
     text.textContent = bannerText || DEFAULT_BANNER_TEXT;
     banner.appendChild(text);
 
     const actions = document.createElement('div');
-    actions.setAttribute('data-wd-consent-actions', '');
+    actions.setAttribute('data-ccm-actions', '');
 
     actions.appendChild(
       makeButton('Customize', () => consentStore.getState().setActiveUI('dialog')),
@@ -170,24 +170,24 @@ export function mountConsentUI(consentStore, options = {}) {
     lastFocused = document.activeElement;
 
     const overlay = document.createElement('div');
-    overlay.setAttribute('data-wd-consent-overlay', '');
+    overlay.setAttribute('data-ccm-overlay', '');
 
     const dialog = document.createElement('div');
-    dialog.setAttribute('data-wd-consent-dialog', '');
+    dialog.setAttribute('data-ccm-dialog', '');
     dialog.setAttribute('role', 'dialog');
     dialog.setAttribute('aria-modal', 'true');
-    dialog.setAttribute('aria-labelledby', 'wd-consent-dialog-title');
+    dialog.setAttribute('aria-labelledby', 'ccm-dialog-title');
 
     const title = document.createElement('h2');
-    title.id = 'wd-consent-dialog-title';
+    title.id = 'ccm-dialog-title';
     title.textContent = 'Manage cookie preferences';
     dialog.appendChild(title);
 
     const intro = document.createElement('p');
-    intro.id = 'wd-consent-dialog-text';
+    intro.id = 'ccm-dialog-text';
     intro.textContent = modalText || DEFAULT_MODAL_TEXT;
     dialog.appendChild(intro);
-    dialog.setAttribute('aria-describedby', 'wd-consent-dialog-text');
+    dialog.setAttribute('aria-describedby', 'ccm-dialog-text');
 
     const categories = state.consentCategories && state.consentCategories.length > 0
       ? state.consentCategories
@@ -196,12 +196,12 @@ export function mountConsentUI(consentStore, options = {}) {
     for (const category of categories) {
       const info = CATEGORY_INFO[category] || { label: category, description: '' };
       const row = document.createElement('div');
-      row.setAttribute('data-wd-consent-category', '');
+      row.setAttribute('data-ccm-category', '');
 
       const isNecessary = category === 'necessary';
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
-      checkbox.id = `wd-consent-cat-${category}`;
+      checkbox.id = `ccm-cat-${category}`;
       checkbox.checked = isNecessary
         ? true
         : Boolean((state.selectedConsents || state.consents || {})[category]);
@@ -225,7 +225,7 @@ export function mountConsentUI(consentStore, options = {}) {
     }
 
     const actions = document.createElement('div');
-    actions.setAttribute('data-wd-consent-actions', '');
+    actions.setAttribute('data-ccm-actions', '');
     actions.appendChild(
       makeButton('Save preferences', () => consentStore.getState().saveConsents('custom')),
     );
@@ -253,7 +253,7 @@ export function mountConsentUI(consentStore, options = {}) {
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = text;
-    if (primary) button.setAttribute('data-wd-consent-primary', '');
+    if (primary) button.setAttribute('data-ccm-primary', '');
     button.addEventListener('click', onClick);
     return button;
   }
