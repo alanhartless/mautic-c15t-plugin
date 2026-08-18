@@ -19,4 +19,5 @@ return function (ContainerConfigurator $configurator): void {
     $services->alias('mautic.integration.c15t', MauticPlugin\C15tBundle\Integration\C15tIntegration::class);
     $services->alias('mautic.integration.c15t.config', MauticPlugin\C15tBundle\Integration\Support\ConfigSupport::class);
     $services->alias('mautic.c15t.integration_registry', MauticPlugin\C15tBundle\Service\IntegrationRegistry::class);
+    $services->alias('mautic.c15t.form.config', MauticPlugin\C15tBundle\Form\Type\ConfigType::class);
 };

@@ -7,6 +7,7 @@ namespace MauticPlugin\C15tBundle\Controller;
 use Mautic\CoreBundle\Controller\CommonController;
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\PluginBundle\Helper\IntegrationHelper;
+use MauticPlugin\C15tBundle\Integration\C15tIntegration;
 use MauticPlugin\C15tBundle\Service\IntegrationRegistry;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -55,7 +56,7 @@ class PublicController extends CommonController
             return new Response('// c15t: could not resolve requesting origin', 400, ['Content-Type' => 'application/javascript']);
         }
 
-        $integrationObject = $integrationHelper->getIntegrationObject('C15t');
+        $integrationObject = $integrationHelper->getIntegrationObject(C15tIntegration::NAME);
         if (!$integrationObject || !$integrationObject->getIntegrationSettings()->getIsPublished()) {
             // Master enable/disable toggle (native to Mautic's Integration
             // system, Plugins -> Consent Manager (c15t)) -- disabled means
