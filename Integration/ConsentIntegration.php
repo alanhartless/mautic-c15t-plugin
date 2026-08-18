@@ -5,28 +5,24 @@ declare(strict_types=1);
 namespace MauticPlugin\MauticC15tBundle\Integration;
 
 use Mautic\PluginBundle\Integration\AbstractIntegration;
-use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 
 /**
- * Enable/disable toggle and settings screen are native to Mautic's own
- * Integration system (Plugins section) -- extending AbstractIntegration
- * and implementing getName()/getDisplayName()/getAuthenticationType() is
- * sufficient for that, confirmed against a real, minimal, currently-
- * shipped example (plugins/MauticTagManagerBundle/Integration/
- * TagManagerIntegration.php on GitHub), not assumed from docs.
+ * Deliberately minimal -- this Integration exists only for what
+ * AbstractIntegration gives for free: a real, iconed entry in Mautic's
+ * Plugins list with a native enable/disable toggle (fail-closed when
+ * disabled -- see Controller/PublicController.php's own check). Confirmed
+ * against a real, minimal, currently-shipped example (plugins/
+ * MauticTagManagerBundle/Integration/TagManagerIntegration.php on
+ * GitHub), not assumed from docs.
  *
- * Site-profile configuration -- domain(s) -> consent categories +
- * script-loader integrations, the per-site extensibility this plugin
- * needs -- is stored as one JSON blob in this integration's own
- * feature_settings, edited via a single textarea field rather than a
- * fully dynamic, per-integration-type set of form fields. This is a
- * deliberate v1 scoping call, not an oversight: building a Symfony
- * CollectionType with conditional sub-fields per script-loader
- * integration type is real additional work, and this plugin's actual
- * hard requirement -- Controller/PublicController.php being able to read
- * structured per-site config -- doesn't need it. Revisit if the JSON
- * textarea proves too error-prone in practice once real admins (possibly
- * outside this team, if published) are using it day to day.
+ * The actual site-profile settings live in Mautic's Configuration screen
+ * instead (Configuration -> Consent Manager (c15t)) -- see EventListener/
+ * ConfigSubscriber.php and Form/Type/ConfigType.php. An earlier version
+ * of this class tried to add that same settings field here via
+ * appendToForm(), which turned out not to render at all (the "Features"
+ * tab's own template only shows specific named fields, not arbitrary
+ * custom ones) -- moved deliberately, not just relocated for its own
+ * sake.
  */
 class ConsentIntegration extends AbstractIntegration
 {
@@ -43,68 +39,5 @@ class ConsentIntegration extends AbstractIntegration
     public function getAuthenticationType(): string
     {
         return 'none';
-    }
-
-    public function appendToForm(&$builder, $data, $formArea): void
-    {
-        if ('features' !== $formArea) {
-            return;
-        }
-
-        $builder->add(
-            'sites_json',
-            TextareaType::class,
-            [
-                'label'    => 'Site profiles (JSON)',
-                'data'     => $data['sites_json'] ?? $this->getDefaultSitesJson(),
-                'required' => false,
-                'attr'     => [
-                    'rows'    => 20,
-                    'tooltip' => 'One entry per embedding domain: allowed origin(s), consent categories, and script-loader integrations. See this plugin\'s own README.md for the exact shape and Service/IntegrationRegistry.php for the supported integration keys.',
-                ],
-            ]
-        );
-    }
-
-    /**
-     * Seeds the field with a documented example shape rather than an
-     * empty textarea. Malformed JSON is NOT validated at this form layer
-     * (a v1 simplification, see this class's own header comment) --
-     * Controller/PublicController.php handles a broken/missing profile
-     * defensively (404, not a fatal error) instead.
-     */
-    private function getDefaultSitesJson(): string
-    {
-        return json_encode(
-            [
-                [
-                    'domain'            => 'your-site.example.com',
-                    // Your c15t backend's own base URL (self-hosted or
-                    // otherwise) -- required, no default, since this
-                    // plugin doesn't assume any particular deployment.
-                    'backendURL'        => 'https://consent.example.com/api/c15t',
-                    'categories'        => ['necessary', 'measurement', 'marketing'],
-                    // Set true to skip the bundle's own default banner CSS
-                    // (Assets/src/banner.css.js) and style data-wd-consent-*
-                    // elements yourself instead.
-                    'disableDefaultCss' => false,
-                    'scripts'           => [
-                        [
-                            'integration' => 'mautic-tracking',
-                            'params'      => ['mauticUrl' => 'https://mautic.example.com'],
-                        ],
-                        [
-                            'integration' => 'google-tag',
-                            'params'      => ['id' => 'G-XXXXXXX'],
-                        ],
-                        [
-                            'integration' => 'meta-pixel',
-                            'params'      => ['pixelId' => '000000000000000'],
-                        ],
-                    ],
-                ],
-            ],
-            JSON_PRETTY_PRINT
-        );
     }
 }

@@ -1,0 +1,73 @@
+{#
+  Block name MUST match this file's own name (minus .html.twig) and
+  EventListener/ConfigSubscriber.php's 'formAlias' -- confirmed against
+  MessengerBundle's own equivalent file/block pair
+  (_config_messengerconfig_widget.html.twig / 'messengerconfig'), fetched
+  directly from mautic/mautic on GitHub, not guessed.
+
+  Per-integration panels are NOT hardcoded here -- they're discovered by
+  scanning form.children for any field ending in '_enabled' and grouping
+  it with every other field sharing its prefix (Form/Type/ConfigType.php
+  generates those fields, and only those fields, from
+  IntegrationRegistry::getPackaged()). Adding a new packaged integration
+  to that registry grows this screen automatically, with no template
+  change needed here.
+
+  Headings/intro copy use |trans (real translation keys, see
+  Translations/en_US/messages.ini); individual field labels/tooltips are
+  translated inside ConfigType.php itself via the 'label'/'attr.tooltip'
+  form options, so form_row() below needs no explicit |trans of its own.
+#}
+{% block _config_c15tconfig_widget %}
+<div class="alert alert-info mt-md" role="alert">
+    {{ 'mautic.c15t.config.intro'|trans }}
+</div>
+
+<h4 class="fw-sb mt-48 mb-xs">{{ 'mautic.c15t.config.heading.general'|trans }}</h4>
+<div class="row">
+    <div class="panel panel-default mb-md">
+        <div class="panel-body">
+            {{ form_row(form.domains) }}
+            {{ form_row(form.backend_url) }}
+            {{ form_row(form.disable_default_css) }}
+        </div>
+    </div>
+</div>
+
+<h4 class="fw-sb mt-24 mb-xs">{{ 'mautic.c15t.config.heading.categories'|trans }}</h4>
+<div class="row">
+    <div class="panel panel-default mb-md">
+        <div class="panel-body">
+            {{ form_row(form.categories) }}
+        </div>
+    </div>
+</div>
+
+<h4 class="fw-sb mt-24 mb-xs">{{ 'mautic.c15t.config.heading.integrations'|trans }}</h4>
+<div class="row">
+    {% for name, child in form.children %}
+        {% if name ends with '_enabled' %}
+            {% set prefix = name|slice(0, -8) %}
+            <div class="panel panel-default mb-md">
+                <div class="panel-body">
+                    {{ form_row(child) }}
+                    {% for paramName, paramChild in form.children %}
+                        {% if paramName starts with prefix ~ '_' and paramName != name %}
+                            {{ form_row(paramChild) }}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
+</div>
+
+<h4 class="fw-sb mt-24 mb-xs">{{ 'mautic.c15t.config.heading.advanced'|trans }}</h4>
+<div class="row">
+    <div class="panel panel-default mb-md">
+        <div class="panel-body">
+            {{ form_row(form.advanced_scripts_json) }}
+        </div>
+    </div>
+</div>
+{% endblock %}

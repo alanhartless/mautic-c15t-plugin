@@ -19,9 +19,10 @@ option by itself. This plugin makes Mautic that "something":
   (resolved from the `Origin`/`Referer` header) -- embed the exact same
   script tag on every site, Mautic figures out which one is asking and
   serves that site's own categories/scripts.
-- **Configuration lives in Mautic's own admin** (Plugins -> Consent Manager
-  (c15t)) -- native enable/disable toggle, one JSON field per install
-  describing every site you've embedded this on.
+- **Configuration lives in Mautic's own admin** -- a master enable/disable
+  toggle on Plugins -> Consent Manager (c15t), and individual fields
+  (allowed domains, backend URL, categories, per-integration toggles) on
+  Configuration -> Consent Manager (c15t).
 - **Mautic's own tracking is consent-gated for free** -- the
   `mautic-tracking` packaged integration wraps Mautic's real `mtc.js`
   bootstrap snippet as a normal script-loader entry, so it only loads once
@@ -50,13 +51,25 @@ all via the same script tag.
 ## Repo layout
 
 - `MauticC15tBundle.php` / `Config/config.php` -- the Mautic plugin bundle
-  itself (routes, service registration).
+  itself (routes, service registration, config-screen parameter defaults).
 - `Integration/ConsentIntegration.php` -- gives you the native Mautic
-  enable/disable toggle plus one settings field (a JSON textarea) for your
-  site profiles. See its own docblock for why this is one textarea and not
-  a fully dynamic per-field form.
-- `Controller/PublicController.php` -- serves `/consent.js`: resolves the
-  requesting site, builds its config, concatenates the pre-built bundle.
+  enable/disable toggle on Plugins -> Consent Manager (c15t). See its own
+  docblock for why the actual settings live elsewhere.
+- `EventListener/ConfigSubscriber.php` / `Form/Type/ConfigType.php` --
+  registers the plugin's own panel on Mautic's global Configuration screen.
+  `ConfigType` generates one enable toggle + param field(s) per packaged
+  integration by looping `IntegrationRegistry::getPackaged()` -- adding an
+  integration to that registry grows this form automatically.
+- `Resources/views/FormTheme/Config/_config_c15tconfig_widget.html.twig` --
+  the Configuration screen's own layout (general fields, categories,
+  per-integration panels, advanced JSON), grouped generically off form
+  field naming, not a hardcoded per-integration list.
+- `Translations/en_US/messages.ini` -- field labels/tooltips, following
+  Mautic's own `mautic.<bundle>.<area>.<field>[.tooltip]` key convention.
+- `Controller/PublicController.php` -- serves `/consent.js`: checks the
+  requesting domain against the configured allowlist, builds the config
+  from the Configuration screen's fields, concatenates the pre-built
+  bundle.
 - `Service/IntegrationRegistry.php` -- the source of truth for which
   third-party integrations are "packaged" (pre-bundled, get a proper admin
   form) vs. "raw" (any script URL or inline snippet, no plugin update
@@ -76,26 +89,33 @@ all via the same script tag.
 2. Run `php bin/console cache:clear` and reload Mautic's Plugins page (or
    `php bin/console mautic:plugins:reload` if your Mautic version has it) so
    it picks up the new bundle.
-3. Configuration -> Plugins -> **Consent Manager (c15t)** -- enable it, then
-   fill in the site profiles JSON. Shape:
+3. Plugins -> **Consent Manager (c15t)** -- toggle it published (this is
+   the master fail-closed switch; nothing serves from `/consent.js` while
+   it's off).
+4. Configuration -> **Consent Manager (c15t)** -- fill in:
+   - **Allowed domains** -- one per line, every site that will embed this
+     instance's `/consent.js`.
+   - **c15t backend URL** -- your self-hosted c15t backend's base URL,
+     e.g. `https://consent.example.com/api/c15t`.
+   - **Consent categories** -- multi-select of which categories the
+     banner offers (`necessary` is always included).
+   - **Disable default banner styling** -- turn on if a site will supply
+     its own CSS instead.
+   - One panel per packaged integration (Mautic tracking, GA4, GTM,
+     PostHog, Meta/Reddit/TikTok pixels, LinkedIn Insight Tag, X pixel) --
+     each has its own enable toggle and its own parameter field(s) (e.g.
+     Meta Pixel's Pixel ID).
+   - **Advanced: custom scripts (JSON)** -- optional, for anything not in
+     the packaged list. A JSON array of `raw-src`/`raw-inline` entries:
 
 ```json
 [
-  {
-    "domain": "your-site.example.com",
-    "backendURL": "https://consent.example.com/api/c15t",
-    "categories": ["necessary", "measurement", "marketing"],
-    "disableDefaultCss": false,
-    "scripts": [
-      { "integration": "mautic-tracking", "params": { "mauticUrl": "https://your-mautic.example.com" } },
-      { "integration": "google-tag", "params": { "id": "G-XXXXXXX" } },
-      { "integration": "meta-pixel", "params": { "pixelId": "000000000000000" } }
-    ]
-  }
+  { "integration": "raw-src", "id": "my-script", "src": "https://example.com/widget.js", "category": "functionality" },
+  { "integration": "raw-inline", "id": "my-inline", "textContent": "console.log('consented')", "category": "marketing" }
 ]
 ```
 
-4. Embed on the target site: `<script src="https://your-mautic.example.com/consent.js" defer></script>`.
+5. Embed on the target site: `<script src="https://your-mautic.example.com/consent.js" defer></script>`.
 
 You also need a running c15t backend somewhere (`backendURL` above) --
 this plugin is the embedding/config/gating layer, not the consent-storage
@@ -138,10 +158,22 @@ Two things specifically are unverified and worth checking on first install:
   pattern from a real, currently-shipped Mautic plugin
   (`MauticTagManagerBundle`), not this exact call against a running
   instance.
-- **`appendToForm()`'s `'features'` form-area string** (`Integration/
-  ConsentIntegration.php`) -- the general `AbstractIntegration` mechanism
-  is confirmed real; this specific area name was not independently
-  verified against a live Configuration -> Plugins screen.
+- **`ConfigType`'s explicit service registration** (`Config/config.php`'s
+  `services.other.mautic.c15t.form.config` entry) -- `ConfigType` now
+  takes constructor dependencies (`IntegrationRegistry` + `translator`),
+  so Symfony's form factory needs to resolve it via the container rather
+  than `new ConfigType()`. Core bundles' own Form Types get this wiring
+  for free from Symfony's namespace-wide `autoconfigure` pass over their
+  `services.yaml`; it's unconfirmed whether a plugin service declared this
+  way in `config.php` gets the same `form.type` tagging. If the
+  Configuration screen 500s on load after this change, that's the first
+  thing to check.
+- **Twig's `slice`/`starts with`/`ends with`** (`Resources/views/
+  FormTheme/Config/_config_c15tconfig_widget.html.twig`) -- used to group
+  each packaged integration's fields into its own panel by field-name
+  prefix, without hardcoding the integration list in the template. These
+  are standard Twig 3 core features, not verified against Mautic's
+  actually-bundled Twig version specifically.
 - **Mautic's own tracking bootstrap snippet** (`Assets/src/mautic-
   tracking.js`) -- the content is the standard async-loader pattern
   documented across Mautic's history, not copy-pasted from a live
