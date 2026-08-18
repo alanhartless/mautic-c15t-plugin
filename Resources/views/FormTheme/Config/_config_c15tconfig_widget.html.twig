@@ -5,13 +5,18 @@
   (_config_messengerconfig_widget.html.twig / 'messengerconfig'), fetched
   directly from mautic/mautic on GitHub, not guessed.
 
-  Per-integration panels are NOT hardcoded here -- they're discovered by
-  scanning form.children for any field ending in '_enabled' and grouping
-  it with every other field sharing its prefix (Form/Type/ConfigType.php
-  generates those fields, and only those fields, from
-  IntegrationRegistry::getPackaged()). Adding a new packaged integration
-  to that registry grows this screen automatically, with no template
-  change needed here.
+  Per-integration panels are NOT hardcoded here, and deliberately do NOT
+  group fields by string-prefix matching on their names (e.g. "starts
+  with '{prefix}_'") -- registry keys aren't prefix-safe against each
+  other ('google-tag' is a literal string prefix of
+  'google-tag-manager'), so that approach double-rendered fields and blew
+  up with Symfony's "already been rendered" error on first live deploy.
+  Instead, Form/Type/ConfigType.php's own buildView() hands this template
+  an explicit `form.vars.c15tIntegrationGroups` array (one entry per
+  packaged integration, each naming its own enabled field + param field
+  names exactly) -- looped below with zero ambiguity. Adding a new
+  packaged integration to IntegrationRegistry grows this screen
+  automatically, with no template change needed here.
 
   Headings/intro copy use |trans (real translation keys, see
   Translations/en_US/messages.ini); individual field labels/tooltips are
@@ -45,20 +50,15 @@
 
 <h4 class="fw-sb mt-24 mb-xs">{{ 'mautic.c15t.config.heading.integrations'|trans }}</h4>
 <div class="row">
-    {% for name, child in form.children %}
-        {% if name ends with '_enabled' %}
-            {% set prefix = name|slice(0, -8) %}
-            <div class="panel panel-default mb-md">
-                <div class="panel-body">
-                    {{ form_row(child) }}
-                    {% for paramName, paramChild in form.children %}
-                        {% if paramName starts with prefix ~ '_' and paramName != name %}
-                            {{ form_row(paramChild) }}
-                        {% endif %}
-                    {% endfor %}
-                </div>
+    {% for group in form.vars.c15tIntegrationGroups %}
+        <div class="panel panel-default mb-md">
+            <div class="panel-body">
+                {{ form_row(form.children[group.enabledField]) }}
+                {% for paramField in group.paramFields %}
+                    {{ form_row(form.children[paramField]) }}
+                {% endfor %}
             </div>
-        {% endif %}
+        </div>
     {% endfor %}
 </div>
 

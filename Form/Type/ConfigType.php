@@ -11,6 +11,8 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormInterface;
+use Symfony\Component\Form\FormView;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
@@ -151,6 +153,36 @@ class ConfigType extends AbstractType
                 'tooltip' => $this->translator->trans('mautic.c15t.config.advanced_scripts_json.tooltip'),
             ],
         ]);
+    }
+
+    /**
+     * Hands the Twig form theme an explicit, unambiguous grouping of
+     * which fields belong to which packaged integration -- deliberately
+     * NOT left for the template to work out itself via field-name string
+     * matching (e.g. "starts with '{prefix}_'"), because registry keys
+     * aren't prefix-safe against each other: 'google-tag' is a literal
+     * string prefix of 'google-tag-manager', so a naive
+     * `paramName starts with 'google_tag_'` check in Twig also matched
+     * 'google_tag_manager_enabled' and 'google_tag_manager_id', which
+     * both got rendered a second time under the wrong panel and blew up
+     * with Symfony's "Field ... has already been rendered" error on
+     * first live deploy.
+     */
+    public function buildView(FormView $view, FormInterface $form, array $options): void
+    {
+        $groups = [];
+        foreach ($this->registry->getPackaged() as $key => $integration) {
+            $prefix = str_replace('-', '_', $key);
+            $groups[] = [
+                'enabledField' => $prefix.'_enabled',
+                'paramFields'  => array_map(
+                    static fn (string $paramKey): string => $prefix.'_'.$paramKey,
+                    array_keys($integration['params'])
+                ),
+            ];
+        }
+
+        $view->vars['c15tIntegrationGroups'] = $groups;
     }
 
     public function getBlockPrefix(): string
