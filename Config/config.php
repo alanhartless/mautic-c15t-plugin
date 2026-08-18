@@ -31,4 +31,13 @@ return [
             ],
         ],
     ],
+    'forms' => [
+        'mautic.c15t.form.config' => [
+            'class'     => MauticPlugin\C15tBundle\Form\Type\ConfigType::class,
+            'arguments' => [
+                'mautic.c15t.integration_registry',
+                'translator',
+            ],
+        ],
+    ],
 ];

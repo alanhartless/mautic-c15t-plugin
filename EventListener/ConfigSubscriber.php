@@ -24,7 +24,7 @@ class ConfigSubscriber implements EventSubscriberInterface
             'bundle'     => 'C15tBundle',
             'formAlias'  => 'c15tconfig',
             'formType'   => ConfigType::class,
-            'formTheme'  => '@MauticC15t/FormTheme/Config/_config_c15tconfig_widget.html.twig',
+            'formTheme'  => '@C15t/FormTheme/Config/_config_c15tconfig_widget.html.twig',
             'parameters' => $event->getParametersFromConfig('C15tBundle'),
         ]);
     }
