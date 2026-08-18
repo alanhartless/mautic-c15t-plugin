@@ -14,7 +14,7 @@ class ConsentIntegration extends BasicIntegration implements BasicInterface
 
     public function getName(): string
     {
-        return 'C15t';
+        return 'c15t';
     }
 
     public function getDisplayName(): string
