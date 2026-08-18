@@ -9,78 +9,6 @@ load third-party scripts (Google Analytics/Tag Manager, Meta/Reddit/TikTok/X
 pixels, LinkedIn Insight Tag, PostHog, or any raw script you configure) only
 once a visitor consents to the relevant category.
 
-## Why a Mautic plugin, not just a JS snippet
-
-c15t's own client libraries need something to talk to (a backend) and
-something to render (a UI) -- neither ships a plain "drop this on any site"
-option by itself. This plugin makes Mautic that "something":
-
-- **One route, `/consent.js`**, dynamically generated per requesting site
-  (resolved from the `Origin`/`Referer` header) -- embed the exact same
-  script tag on every site, Mautic figures out which one is asking and
-  serves that site's own categories/scripts.
-- **Configuration lives in Mautic's own admin** -- a master enable/disable
-  toggle on Plugins -> Consent Manager (c15t), and individual fields
-  (allowed domains, backend URL, categories, per-integration toggles) on
-  Configuration -> Consent Manager (c15t).
-- **Mautic's own tracking is consent-gated for free** -- the
-  `mautic-tracking` packaged integration wraps Mautic's real `mtc.js`
-  bootstrap snippet as a normal script-loader entry, so it only loads once
-  the `measurement` category is actually consented to.
-
-## Architecture
-
-```
-Site (any domain)  --<script src="https://your-mautic.example.com/consent.js">-->  Mautic (this plugin)
-                                                                                          |
-                                                                                   resolves Origin -> site profile
-                                                                                          |
-                                                                            Assets/build/consent-bundle.js
-                                                                         (banner UI + pre-bundled integrations)
-                                                                                          |
-                                                                    consentStore -- talks to your c15t backend
-                                                                          (mode: 'hosted', backendURL you configure)
-```
-
-The **banner/dialog UI is deliberately vanilla JS**, not a framework
-component -- it's built directly on c15t's headless store
-(`getOrCreateConsentRuntime`), which is what makes it portable enough to
-embed on a plain HTML site, a Grav/PHP site, a React app, or anything else,
-all via the same script tag.
-
-## Repo layout
-
-- `MauticC15tBundle.php` / `Config/config.php` -- the Mautic plugin bundle
-  itself (routes, service registration, config-screen parameter defaults).
-- `Integration/ConsentIntegration.php` -- gives you the native Mautic
-  enable/disable toggle on Plugins -> Consent Manager (c15t). See its own
-  docblock for why the actual settings live elsewhere.
-- `EventListener/ConfigSubscriber.php` / `Form/Type/ConfigType.php` --
-  registers the plugin's own panel on Mautic's global Configuration screen.
-  `ConfigType` generates one enable toggle + param field(s) per packaged
-  integration by looping `IntegrationRegistry::getPackaged()` -- adding an
-  integration to that registry grows this form automatically.
-- `Resources/views/FormTheme/Config/_config_c15tconfig_widget.html.twig` --
-  the Configuration screen's own layout (general fields, categories,
-  per-integration panels, advanced JSON), grouped generically off form
-  field naming, not a hardcoded per-integration list.
-- `Translations/en_US/messages.ini` -- field labels/tooltips, following
-  Mautic's own `mautic.<bundle>.<area>.<field>[.tooltip]` key convention.
-- `Controller/PublicController.php` -- serves `/consent.js`: checks the
-  requesting domain against the configured allowlist, builds the config
-  from the Configuration screen's fields, concatenates the pre-built
-  bundle.
-- `Service/IntegrationRegistry.php` -- the source of truth for which
-  third-party integrations are "packaged" (pre-bundled, get a proper admin
-  form) vs. "raw" (any script URL or inline snippet, no plugin update
-  needed). Every param name in here was confirmed against `@c15t/scripts`'s
-  actual installed source, not assumed from its docs.
-- `Assets/src/` -- the client bundle's source (banner UI, default CSS,
-  packaged integration wiring, Mautic's own tracking snippet).
-- `Assets/build/consent-bundle.js` -- **generated, not hand-edited**. Run
-  `npm run build` after any change under `Assets/src/` and commit the
-  result (no CI/build step wired up yet -- see "Building" below).
-
 ## Installing
 
 1. Copy this repo's contents into your Mautic install's
@@ -115,11 +43,73 @@ all via the same script tag.
 ]
 ```
 
-5. Embed on the target site: `<script src="https://your-mautic.example.com/consent.js" defer></script>`.
+5. Embed on the target site -- see "Embedding on a site" below.
 
 You also need a running c15t backend somewhere (`backendURL` above) --
 this plugin is the embedding/config/gating layer, not the consent-storage
 backend itself. See [c15t's own self-host docs](https://c15t.com/docs/self-host/quickstart).
+
+## Embedding on a site
+
+Add one script tag to the site, ideally in `<head>` so it runs as early as
+possible:
+
+```html
+<script src="https://your-mautic.example.com/consent.js" defer></script>
+```
+
+That's the entire integration -- no other markup, JS, or build step is
+needed on the site itself. Once that tag is in place:
+
+- The banner (or, once a visitor has already decided, nothing) mounts
+  itself automatically into a `<div id="wd-consent-root">` it creates.
+- Every script this instance is configured to load (Mautic's own tracking,
+  GA4/GTM, pixels, anything in "Advanced: custom scripts") only actually
+  loads once a visitor consents to its category -- there's nothing further
+  to gate manually on the site's side.
+
+Two things have to line up before this works, both configured on the
+Mautic side (Configuration -> Consent Manager (c15t), see "Installing"
+above), not on the site:
+
+1. **The site's domain must be in "Allowed domains".** `/consent.js`
+   resolves the requesting site from its `Origin`/`Referer` header and
+   refuses (404) anything not on that list -- match it exactly (bare host,
+   no scheme, e.g. `www.example.com`).
+2. **The c15t backend's own `trustedOrigins` must include the site too.**
+   The allowlist above only gates who gets served the loader script; the
+   consent runtime's own calls from the visitor's browser to your c15t
+   backend (`backendURL`) are a separate cross-origin request that backend
+   has to trust independently. See
+   [c15t's self-host docs](https://c15t.com/docs/self-host/quickstart).
+
+### Styling the banner
+
+The default banner ships with its own CSS, themeable via custom
+properties -- override any of these on the site without touching
+"Disable default banner styling":
+
+```css
+:root {
+  --wd-consent-bg: #ffffff;
+  --wd-consent-fg: #111827;
+  --wd-consent-muted: #6b7280;
+  --wd-consent-border: #e5e7eb;
+  --wd-consent-primary: #111827;
+  --wd-consent-primary-fg: #ffffff;
+  --wd-consent-radius: 12px;
+  --wd-consent-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
+  --wd-consent-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+}
+```
+
+For anything beyond variables, turn on "Disable default banner styling" in
+Configuration -> Consent Manager (c15t) and style the markup directly --
+the same `data-wd-consent-*` hooks the default CSS targets are always
+present regardless of that setting: `[data-wd-consent-banner]`,
+`[data-wd-consent-dialog]`, `[data-wd-consent-overlay]`,
+`[data-wd-consent-actions]`, `[data-wd-consent-primary]`,
+`[data-wd-consent-category]`.
 
 ## Supported packaged integrations
 
@@ -147,25 +137,3 @@ npm run build   # -> Assets/build/consent-bundle.js
 ```
 
 Re-run and commit the result whenever anything under `Assets/src/` changes.
-
-## Local validation caveat
-
-This plugin was authored without a live Mautic install to test against.
-Two things specifically are unverified and worth checking on first install:
-
-- **`IntegrationHelper::getIntegrationObject()`'s exact method name/return
-  shape** (`Controller/PublicController.php`) -- confirmed the general
-  pattern from a real, currently-shipped Mautic plugin
-  (`MauticTagManagerBundle`), not this exact call against a running
-  instance.
-- **Twig's `slice`/`starts with`/`ends with`** (`Resources/views/
-  FormTheme/Config/_config_c15tconfig_widget.html.twig`) -- used to group
-  each packaged integration's fields into its own panel by field-name
-  prefix, without hardcoding the integration list in the template. These
-  are standard Twig 3 core features, not verified against Mautic's
-  actually-bundled Twig version specifically.
-- **Mautic's own tracking bootstrap snippet** (`Assets/src/mautic-
-  tracking.js`) -- the content is the standard async-loader pattern
-  documented across Mautic's history, not copy-pasted from a live
-  instance's own Settings -> "Contact tracking code" page. Confirm it
-  matches before relying on it at real tracking volume.
