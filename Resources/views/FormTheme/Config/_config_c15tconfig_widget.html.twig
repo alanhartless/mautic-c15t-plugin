@@ -10,7 +10,6 @@
             {{ form_row(form.domains) }}
             {{ form_row(form.test_domains) }}
             {{ form_row(form.backend_url) }}
-            {{ form_row(form.disable_default_css) }}
         </div>
     </div>
 </div>
@@ -19,6 +18,7 @@
 <div class="row">
     <div class="panel panel-default mb-md">
         <div class="panel-body">
+            {{ form_row(form.disable_default_css) }}
             {{ form_row(form.enable_focus_trap) }}
             {{ form_row(form.reload_on_restrict) }}
             {{ form_row(form.banner_text) }}
