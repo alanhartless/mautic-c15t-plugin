@@ -61,7 +61,7 @@ function injectStyles() {
  * below; skipping the call skips both the trap AND the initial-focus
  * placement together, not just the Tab-cycling behavior.
  */
-function trapFocus(container, returnFocusTo) {
+function trapFocus(container, returnFocusTo, autoFocus = true) {
   const focusable = () =>
     Array.from(
       container.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'),
@@ -83,20 +83,33 @@ function trapFocus(container, returnFocusTo) {
   };
 
   container.addEventListener('keydown', onKeydown);
-  // Deferred to the next frame -- calling .focus() synchronously in the
-  // same tick `container` was inserted into the DOM (render() just did
-  // root.innerHTML = '' + appendChild in the same pass) silently failed
-  // to take effect in practice: the Tab-cycling logic above worked fine
-  // once focus was inside (e.g. via a manual click), confirming the trap
-  // itself was never the problem -- only this initial placement, which
-  // needs the browser to finish layout/paint on the newly-inserted
-  // element first. requestAnimationFrame guarantees that ordering;
-  // queueMicrotask/setTimeout(0) does not (they can still fire before
-  // the browser's next paint).
-  requestAnimationFrame(() => {
-    const items = focusable();
-    if (items.length > 0) items[0].focus();
-  });
+
+  // autoFocus is false for a re-render of an ALREADY-open surface (e.g.
+  // toggling a category checkbox re-renders the whole dialog via
+  // setSelectedConsent() -> render(), but the user's own focus is
+  // already sensibly placed on the checkbox they just used) -- forcing
+  // focus to the first item on every such re-render fought the scroll-
+  // position restore in render() below: focusing an item outside the
+  // current scroll viewport makes the browser auto-scroll it into view,
+  // undoing the restore. Only jump focus in on a genuinely fresh open
+  // (render()'s own isFreshOpen, passed through renderBanner/
+  // renderDialog) -- confirmed live, 2026-08-18.
+  if (autoFocus) {
+    // Deferred to the next frame -- calling .focus() synchronously in the
+    // same tick `container` was inserted into the DOM (render() just did
+    // root.innerHTML = '' + appendChild in the same pass) silently failed
+    // to take effect in practice: the Tab-cycling logic above worked fine
+    // once focus was inside (e.g. via a manual click), confirming the trap
+    // itself was never the problem -- only this initial placement, which
+    // needs the browser to finish layout/paint on the newly-inserted
+    // element first. requestAnimationFrame guarantees that ordering;
+    // queueMicrotask/setTimeout(0) does not (they can still fire before
+    // the browser's next paint).
+    requestAnimationFrame(() => {
+      const items = focusable();
+      if (items.length > 0) items[0].focus();
+    });
+  }
 
   return () => {
     container.removeEventListener('keydown', onKeydown);
@@ -129,8 +142,27 @@ export function mountConsentUI(consentStore, options = {}) {
 
   let lastFocused = null;
   let cleanupTrap = null;
+  let lastActiveUI = null;
 
   function render(state) {
+    // Every store update (including a single checkbox toggle via
+    // setSelectedConsent()) re-renders the whole subtree from scratch --
+    // root.innerHTML = '' below tears down and rebuilds the dialog on
+    // every interaction inside it, and a brand-new DOM element naturally
+    // starts at scrollTop 0. Without capturing/restoring it here, toggling
+    // any category checkbox jumps the dialog back to the top, forcing a
+    // re-scroll down to the next one -- confirmed live, 2026-08-18.
+    const existingDialog = root.querySelector('[data-ccm-dialog]');
+    const savedScrollTop = existingDialog ? existingDialog.scrollTop : 0;
+
+    // Only a genuine change of activeUI counts as a "fresh open" --
+    // passed through to trapFocus() so a re-render of the SAME
+    // already-open surface (e.g. that same checkbox toggle) doesn't
+    // yank focus back to the first item, see trapFocus()'s own comment
+    // for why that fights the scroll restore above.
+    const isFreshOpen = state.activeUI !== lastActiveUI;
+    lastActiveUI = state.activeUI;
+
     root.innerHTML = '';
     if (cleanupTrap) {
       cleanupTrap();
@@ -138,14 +170,16 @@ export function mountConsentUI(consentStore, options = {}) {
     }
 
     if (state.activeUI === 'banner') {
-      renderBanner(state);
+      renderBanner(state, isFreshOpen);
     } else if (state.activeUI === 'dialog') {
-      renderDialog(state);
+      renderDialog(state, isFreshOpen);
+      const newDialog = root.querySelector('[data-ccm-dialog]');
+      if (newDialog) newDialog.scrollTop = savedScrollTop;
     }
     // 'none' -- nothing mounted, root stays empty.
   }
 
-  function renderBanner(state) {
+  function renderBanner(state, autoFocus) {
     lastFocused = document.activeElement;
 
     const banner = document.createElement('div');
@@ -175,10 +209,10 @@ export function mountConsentUI(consentStore, options = {}) {
     banner.appendChild(actions);
     root.appendChild(banner);
 
-    if (enableFocusTrap) cleanupTrap = trapFocus(banner, lastFocused);
+    if (enableFocusTrap) cleanupTrap = trapFocus(banner, lastFocused, autoFocus);
   }
 
-  function renderDialog(state) {
+  function renderDialog(state, autoFocus) {
     lastFocused = document.activeElement;
 
     const overlay = document.createElement('div');
@@ -258,7 +292,7 @@ export function mountConsentUI(consentStore, options = {}) {
     overlay.appendChild(dialog);
     root.appendChild(overlay);
 
-    if (enableFocusTrap) cleanupTrap = trapFocus(dialog, lastFocused);
+    if (enableFocusTrap) cleanupTrap = trapFocus(dialog, lastFocused, autoFocus);
   }
 
   function makeButton(text, onClick, primary = false) {
