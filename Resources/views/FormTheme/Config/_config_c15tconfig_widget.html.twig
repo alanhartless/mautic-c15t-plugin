@@ -67,6 +67,21 @@
     <div class="panel panel-default mb-md">
         <div class="panel-body">
             {{ form_row(form.advanced_scripts_json) }}
+            <p class="help-block mb-xs">{{ 'mautic.c15t.config.advanced_scripts_json.example_heading'|trans }}:</p>
+            <pre class="mb-0"><code>[
+  {
+    "integration": "raw-src",
+    "id": "my-script",
+    "src": "https://example.com/widget.js",
+    "category": "functionality"
+  },
+  {
+    "integration": "raw-inline",
+    "id": "my-inline",
+    "textContent": "console.log('consented')",
+    "category": "marketing"
+  }
+]</code></pre>
         </div>
     </div>
 </div>
