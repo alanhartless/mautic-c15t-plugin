@@ -36,23 +36,8 @@ once a visitor consents to the relevant category.
      dedicated subdomain that hosts nothing else).
    - **Consent categories** -- multi-select of which categories the
      banner offers (`necessary` is always included).
-   - **Consent mode** -- how consent is governed
-     ([c15t's consent-models docs](https://c15t.com/docs/frameworks/javascript/concepts/consent-models)):
-     one of the four global models (`opt-in`, `opt-out`, `iab`, or
-     disabled/no banner) applied everywhere, or **Policy Pack** to switch
-     to region-specific rules using the field below.
-   - **Policy packs** -- only takes effect when Consent mode above is set
-     to Policy Pack
-     ([c15t's policy-packs docs](https://c15t.com/docs/frameworks/javascript/concepts/policy-packs)):
-     multi-select of the named regional presets (Europe opt-in, Europe IAB,
-     California opt-out, Quebec opt-in, everywhere-else no-banner),
-     evaluated in the fixed order listed -- the first matching region wins,
-     with the "everywhere else" pack always evaluated last.
    - **Disable default banner styling** -- turn on if a site will supply
      its own CSS instead.
-   - **Initial consent UI** -- banner (default) or dialog, for a first-time
-     visitor's very first prompt. Only applies to the four global consent
-     models; a named policy pack carries its own UI mode from c15t itself.
    - **Trap focus in the consent banner/dialog** -- on by default. Keeps
      Tab/Shift+Tab cycling within the open banner/dialog instead of
      escaping into the rest of the page.
@@ -82,6 +67,18 @@ once a visitor consents to the relevant category.
 You also need a running c15t backend somewhere (`backendURL` above) --
 this plugin is the embedding/config/gating layer, not the consent-storage
 backend itself. See [c15t's own self-host docs](https://c15t.com/docs/self-host/quickstart).
+
+**Policy packs / consent model (which jurisdictions get a banner, and
+under which model) are not configured here at all** -- they live entirely
+on the c15t **backend**'s own `c15tInstance()` call
+([self-host policy-packs guide](https://c15t.com/docs/self-host/guides/policy-packs)),
+not this plugin. This plugin only controls presentation (text, focus trap,
+reload-on-restrict) once the backend has already decided a banner should
+show; it doesn't decide whether one shows in the first place. An earlier
+version of this plugin had `consent_mode`/`policy_packs` fields here that
+fed a client-side option which turned out not to exist -- hosted-mode
+clients defer entirely to the backend's own `/init` response for
+jurisdiction/policy resolution. Confirmed live, 2026-08-18.
 
 ## Embedding on a site
 
@@ -167,6 +164,16 @@ mind later (a footer "Cookie Settings" link, for example), you need one of:
 Both re-open the preferences dialog (not the banner) with the visitor's
 existing choices pre-filled.
 
+### Resetting consent (testing)
+
+`window.wdConsent.resetConsents()` clears a visitor's saved preferences
+back to the unset default, so the banner shows again on the next load --
+the documented way to force a fresh banner while testing, without needing
+to manually clear cookies/storage (which, in hosted mode, may not even be
+where the "no banner" decision is coming from -- see the jurisdiction note
+above; a banner not showing is very often a policy-pack/region match, not
+saved consent state at all).
+
 ## Supported packaged integrations
 
 | Key | Vendor | Required params |
@@ -196,4 +203,4 @@ Re-run and commit the result whenever anything under `Assets/src/` changes.
 
 ## Local validation caveat
 
-**Consent mode / policy packs, unverified against a live build** (`Assets/src/index.js`'s own `buildPolicyPacks()`): (1) whether `policyPacks` is genuinely the correct top-level option name to pass into `getOrCreateConsentRuntime()` for hosted mode -- c15t's own quickstart builds the array but doesn't show the exact call it's passed into, and a separate doc mention of `offlinePolicy.policyPacks` suggests the option may be nested or named differently for hosted vs. offline mode; (2) the disabled model's literal value -- c15t's consent-models page lists it as JS `null`, but the custom-policy object shape shown on the policy-packs page uses the string `'none'` instead. This plugin uses `'none'` (matches the actual object-shape example, and is unambiguous through the JSON round-trip via `window.__C15T_SITE_CONFIG__`, unlike `null`). Confirm both against a real running banner before relying on non-default consent modes/policy packs in production.
+**Policy packs were originally (incorrectly) implemented client-side in this plugin, confirmed broken live, then moved to the backend, 2026-08-18.** A first version passed a `policyPacks` array from `Assets/src/index.js` into `getOrCreateConsentRuntime()`; this compiled and shipped without error but silently did nothing -- confirmed live by a banner that never appeared, root-caused by reading `@c15t/core`'s actual `ConsentRuntimeOptions` type (no `policyPacks` key exists there at all; hosted mode defers entirely to the backend's `/init` response) and then confirmed against c15t's own [self-host policy-packs guide](https://c15t.com/docs/self-host/guides/policy-packs), whose real working example puts `policyPacks` on `c15tInstance()` instead. Lesson: a docs page showing `policyPackPresets` usage without also showing the call it feeds into isn't enough to trust an integration point against -- the client and server packages both export similarly-named things for different purposes.

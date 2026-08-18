@@ -22,12 +22,9 @@ return [
         'categories'            => ['necessary'],
         'disable_default_css'   => false,
         'reload_on_restrict'    => false,
-        'initial_ui'            => 'banner',
         'enable_focus_trap'     => true,
         'banner_text'           => '',
         'modal_text'            => '',
-        'consent_mode'          => 'opt-in',
-        'policy_packs'          => [],
         'advanced_scripts_json' => '[]',
     ], $c15tIntegrationDefaults),
 

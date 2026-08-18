@@ -19,21 +19,10 @@
 <div class="row">
     <div class="panel panel-default mb-md">
         <div class="panel-body">
-            {{ form_row(form.initial_ui) }}
             {{ form_row(form.enable_focus_trap) }}
             {{ form_row(form.reload_on_restrict) }}
             {{ form_row(form.banner_text) }}
             {{ form_row(form.modal_text) }}
-        </div>
-    </div>
-</div>
-
-<h4 class="fw-sb mt-24 mb-xs">{{ 'mautic.c15t.config.heading.consent_mode'|trans }}</h4>
-<div class="row">
-    <div class="panel panel-default mb-md">
-        <div class="panel-body">
-            {{ form_row(form.consent_mode) }}
-            {{ form_row(form.policy_packs) }}
         </div>
     </div>
 </div>

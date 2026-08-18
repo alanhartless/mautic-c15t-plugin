@@ -228,10 +228,10 @@ class PublicController extends CommonController
             'consentCategories' => array_values($categories),
             'scripts'           => $scripts,
             'disableDefaultCss' => (bool) $coreParametersHelper->get('disable_default_css', false),
-            'consentMode'       => (string) $coreParametersHelper->get('consent_mode', 'opt-in'),
-            'policyPacks'       => array_values((array) $coreParametersHelper->get('policy_packs', [])),
+            // Policy packs / consent model are NOT read here -- they live
+            // on consent-backend's own c15tInstance() call, not this
+            // plugin. See Form/Type/ConfigType.php's own comment.
             'reloadOnRestrict'  => (bool) $coreParametersHelper->get('reload_on_restrict', false),
-            'initialUi'         => (string) $coreParametersHelper->get('initial_ui', 'banner'),
             'enableFocusTrap'   => (bool) $coreParametersHelper->get('enable_focus_trap', true),
             'bannerText'        => (string) $coreParametersHelper->get('banner_text', ''),
             'modalText'         => (string) $coreParametersHelper->get('modal_text', ''),

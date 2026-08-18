@@ -90,22 +90,6 @@ class ConfigType extends AbstractType
             ],
         ]);
 
-        $builder->add('initial_ui', ChoiceType::class, [
-            'label'      => 'mautic.c15t.config.initial_ui',
-            'label_attr' => ['class' => 'control-label'],
-            'required'   => false,
-            'multiple'   => false,
-            'expanded'   => false,
-            'choices'    => [
-                'mautic.c15t.initial_ui.banner' => 'banner',
-                'mautic.c15t.initial_ui.dialog' => 'dialog',
-            ],
-            'attr' => [
-                'class'   => 'form-control',
-                'tooltip' => $this->translator->trans('mautic.c15t.config.initial_ui.tooltip'),
-            ],
-        ]);
-
         $builder->add('enable_focus_trap', YesNoButtonGroupType::class, [
             'label' => 'mautic.c15t.config.enable_focus_trap',
             'attr'  => [
@@ -137,62 +121,17 @@ class ConfigType extends AbstractType
             ],
         ]);
 
-        // Consent mode + policy packs (c15t.com/docs/frameworks/javascript/
-        // concepts/consent-models, .../policy-packs) -- two related but
-        // distinct c15t concepts, deliberately kept as two fields rather
-        // than one combined list: 'consent_mode' picks either one of the
-        // four raw models applied globally (no region restriction) or
-        // switches to "Policy Pack" mode; 'policy_packs' (the five named,
-        // region-aware presets) only takes effect when consent_mode is set
-        // to 'policy_pack' -- Assets/src/index.js is what actually enforces
-        // that gating at runtime (this field intentionally always renders,
-        // so a site can pre-select packs before flipping the mode, rather
-        // than needing admin-side conditional show/hide JS for a v1).
-        $builder->add('consent_mode', ChoiceType::class, [
-            'label'      => 'mautic.c15t.config.consent_mode',
-            'label_attr' => ['class' => 'control-label'],
-            'required'   => false,
-            'multiple'   => false,
-            'expanded'   => false,
-            'choices'    => [
-                'mautic.c15t.consent_mode.opt_in'      => 'opt-in',
-                'mautic.c15t.consent_mode.opt_out'     => 'opt-out',
-                'mautic.c15t.consent_mode.iab'         => 'iab',
-                'mautic.c15t.consent_mode.disabled'    => 'none',
-                'mautic.c15t.consent_mode.policy_pack' => 'policy_pack',
-            ],
-            'attr' => [
-                'class'   => 'form-control',
-                'tooltip' => $this->translator->trans('mautic.c15t.config.consent_mode.tooltip'),
-            ],
-        ]);
-
-        $builder->add('policy_packs', ChoiceType::class, [
-            'label'      => 'mautic.c15t.config.policy_packs',
-            'label_attr' => ['class' => 'control-label'],
-            'required'   => false,
-            'multiple'   => true,
-            'expanded'   => false,
-            // Order is meaningful (first region match wins) and this fixed
-            // choices order is what determines it regardless of click
-            // order -- browsers report a <select multiple>'s selected
-            // values in option-definition order, not selection order.
-            // worldNoBanner deliberately listed last -- it's the
-            // catch-all, so it should only ever be evaluated after every
-            // named region has had a chance to match first.
-            'choices' => [
-                'mautic.c15t.policy_pack.europe_opt_in'      => 'europeOptIn',
-                'mautic.c15t.policy_pack.europe_iab'         => 'europeIab',
-                'mautic.c15t.policy_pack.california_opt_out' => 'californiaOptOut',
-                'mautic.c15t.policy_pack.quebec_opt_in'      => 'quebecOptIn',
-                'mautic.c15t.policy_pack.world_no_banner'    => 'worldNoBanner',
-            ],
-            'attr' => [
-                'class'   => 'form-control',
-                'tooltip' => $this->translator->trans('mautic.c15t.config.policy_packs.tooltip'),
-            ],
-        ]);
-
+        // Policy packs / consent model are NOT configured here -- they live
+        // entirely on consent-backend's own c15tInstance() call (a
+        // separate repo), not this plugin. An earlier version of this
+        // form had 'consent_mode'/'policy_packs' fields that fed a
+        // client-side option (getOrCreateConsentRuntime()'s policyPacks)
+        // which turned out not to exist at all -- hosted-mode clients
+        // defer entirely to the backend's own /init response for
+        // jurisdiction/policy resolution. Confirmed against c15t's own
+        // self-host policy-packs guide, 2026-08-18. See
+        // consent-backend/src/c15t.js's own header comment for where this
+        // actually lives now.
         foreach ($this->registry->getPackaged() as $key => $integration) {
             $prefix          = str_replace('-', '_', $key);
             $integrationName = $this->translator->trans($integration['label']);
