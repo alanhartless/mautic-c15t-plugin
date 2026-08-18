@@ -27,15 +27,6 @@ use Symfony\Component\HttpFoundation\Response;
  * (CoreBundle\Controller\JsController, confirmed via
  * app/bundles/CoreBundle/Config/config.php) -- this plugin's Config/
  * config.php registers it under 'routes.public', not 'routes.main'.
- *
- * UNVERIFIED against a live Mautic instance (no install has run yet):
- * the exact IntegrationHelper method name for fetching a single
- * integration's settings by name. Symfony's own form-builder area name
- * passed to appendToForm() ('features') was likewise not independently
- * confirmed beyond the general AbstractIntegration convention -- check
- * both against a real Configuration -> Plugins -> Consent Manager (c15t)
- * screen after first install, per this repo's own README "Local
- * validation caveat" note.
  */
 class PublicController extends CommonController
 {
@@ -70,12 +61,19 @@ class PublicController extends CommonController
         if (null === $site) {
             return new Response('// c15t: no site profile configured for this origin', 404, ['Content-Type' => 'application/javascript']);
         }
+        if (empty($site['backendURL'])) {
+            return new Response('// c15t: site profile is missing backendURL', 500, ['Content-Type' => 'application/javascript']);
+        }
 
         $bundleJs = $this->readPrebuiltBundle();
         $bootstrapJs = $this->buildBootstrapJs($site, $registry);
 
+        // Config MUST come first -- the bundle reads window.__C15T_SITE_CONFIG__
+        // at load time to initialize itself (Assets/src/index.js's own top-level
+        // code, not a deferred/event-driven init). Concatenating the other way
+        // around would run the bundle before the config it depends on exists.
         return new Response(
-            $bundleJs."\n".$bootstrapJs,
+            $bootstrapJs."\n".$bundleJs,
             200,
             [
                 'Content-Type'  => 'application/javascript',
@@ -144,6 +142,7 @@ class PublicController extends CommonController
     private function buildBootstrapJs(array $site, IntegrationRegistry $registry): string
     {
         $categories = $site['categories'] ?? ['necessary'];
+        $backendUrl = $site['backendURL'] ?? null;
         $scripts    = [];
 
         foreach (($site['scripts'] ?? []) as $entry) {
@@ -178,9 +177,16 @@ class PublicController extends CommonController
 
         $config = [
             'mode'              => 'hosted',
-            'backendURL'        => 'https://consent.wrytersdesk.com/api/c15t',
+            // No hardcoded default -- this plugin is meant to be
+            // installable on any Mautic instance backed by any c15t
+            // deployment. Required in each site profile's own JSON.
+            'backendURL'        => $backendUrl,
             'consentCategories' => $categories,
             'scripts'           => $scripts,
+            // Site profile opt-out of the bundle's own default banner CSS
+            // (Assets/src/banner.css.js) -- see this repo's README for the
+            // "bring your own CSS" case this covers.
+            'disableDefaultCss' => (bool) ($site['disableDefaultCss'] ?? false),
         ];
 
         return sprintf(

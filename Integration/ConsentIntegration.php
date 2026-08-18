@@ -78,10 +78,29 @@ class ConsentIntegration extends AbstractIntegration
         return json_encode(
             [
                 [
-                    'domain'     => 'wrytersdesk.com',
-                    'categories' => ['necessary', 'measurement', 'marketing'],
-                    'scripts'    => [
-                        ['integration' => 'mautic-tracking', 'params' => []],
+                    'domain'            => 'your-site.example.com',
+                    // Your c15t backend's own base URL (self-hosted or
+                    // otherwise) -- required, no default, since this
+                    // plugin doesn't assume any particular deployment.
+                    'backendURL'        => 'https://consent.example.com/api/c15t',
+                    'categories'        => ['necessary', 'measurement', 'marketing'],
+                    // Set true to skip the bundle's own default banner CSS
+                    // (Assets/src/banner.css.js) and style data-wd-consent-*
+                    // elements yourself instead.
+                    'disableDefaultCss' => false,
+                    'scripts'           => [
+                        [
+                            'integration' => 'mautic-tracking',
+                            'params'      => ['mauticUrl' => 'https://mautic.example.com'],
+                        ],
+                        [
+                            'integration' => 'google-tag',
+                            'params'      => ['id' => 'G-XXXXXXX'],
+                        ],
+                        [
+                            'integration' => 'meta-pixel',
+                            'params'      => ['pixelId' => '000000000000000'],
+                        ],
                     ],
                 ],
             ],
