@@ -1,0 +1,19 @@
+{
+    "name": "wrytersdesk/mautic-c15t-bundle",
+    "description": "Consent management (c15t) plugin -- serves a single embeddable loader script per site, gates Mautic's own tracking (mtc.js) on consent, and manages third-party script-loader integrations per site.",
+    "type": "mautic-plugin",
+    "keywords": [
+        "mautic",
+        "plugin",
+        "consent",
+        "c15t",
+        "gdpr"
+    ],
+    "extra": {
+        "install-directory-name": "MauticC15tBundle"
+    },
+    "minimum-stability": "dev",
+    "require": {
+        "mautic/core-lib": "^7.0"
+    }
+}
