@@ -1,28 +1,3 @@
-{#
-  Block name MUST match this file's own name (minus .html.twig) and
-  EventListener/ConfigSubscriber.php's 'formAlias' -- confirmed against
-  MessengerBundle's own equivalent file/block pair
-  (_config_messengerconfig_widget.html.twig / 'messengerconfig'), fetched
-  directly from mautic/mautic on GitHub, not guessed.
-
-  Per-integration panels are NOT hardcoded here, and deliberately do NOT
-  group fields by string-prefix matching on their names (e.g. "starts
-  with '{prefix}_'") -- registry keys aren't prefix-safe against each
-  other ('google-tag' is a literal string prefix of
-  'google-tag-manager'), so that approach double-rendered fields and blew
-  up with Symfony's "already been rendered" error on first live deploy.
-  Instead, Form/Type/ConfigType.php's own buildView() hands this template
-  an explicit `form.vars.c15tIntegrationGroups` array (one entry per
-  packaged integration, each naming its own enabled field + param field
-  names exactly) -- looped below with zero ambiguity. Adding a new
-  packaged integration to IntegrationRegistry grows this screen
-  automatically, with no template change needed here.
-
-  Headings/intro copy use |trans (real translation keys, see
-  Translations/en_US/messages.ini); individual field labels/tooltips are
-  translated inside ConfigType.php itself via the 'label'/'attr.tooltip'
-  form options, so form_row() below needs no explicit |trans of its own.
-#}
 {% block _config_c15tconfig_widget %}
 <div class="alert alert-info mt-md" role="alert">
     {{ 'mautic.c15t.config.intro'|trans }}

@@ -10,7 +10,7 @@
         "gdpr"
     ],
     "extra": {
-        "install-directory-name": "MauticC15tBundle"
+        "install-directory-name": "C15tBundle"
     },
     "minimum-stability": "dev",
     "require": {

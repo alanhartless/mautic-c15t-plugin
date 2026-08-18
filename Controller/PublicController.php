@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MauticC15tBundle\Controller;
+namespace MauticPlugin\C15tBundle\Controller;
 
 use Mautic\CoreBundle\Controller\CommonController;
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\PluginBundle\Helper\IntegrationHelper;
-use MauticPlugin\MauticC15tBundle\Service\IntegrationRegistry;
+use MauticPlugin\C15tBundle\Service\IntegrationRegistry;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 

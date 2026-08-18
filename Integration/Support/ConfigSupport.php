@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MauticC15tBundle\Integration\Support;
+namespace MauticPlugin\C15tBundle\Integration\Support;
 
 use Mautic\IntegrationsBundle\Integration\DefaultConfigFormTrait;
 use Mautic\IntegrationsBundle\Integration\Interfaces\ConfigFormInterface;
-use MauticPlugin\MauticC15tBundle\Integration\ConsentIntegration;
+use MauticPlugin\C15tBundle\Integration\C15tIntegration;
 
-final class ConfigSupport extends ConsentIntegration implements ConfigFormInterface
+final class ConfigSupport extends C15tIntegration implements ConfigFormInterface
 {
     use DefaultConfigFormTrait;
 }

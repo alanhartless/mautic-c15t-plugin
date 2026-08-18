@@ -12,7 +12,7 @@ once a visitor consents to the relevant category.
 ## Installing
 
 1. Copy this repo's contents into your Mautic install's
-   `docroot/plugins/MauticC15tBundle/` (or wherever your Mautic build maps
+   `docroot/plugins/C15tBundle/` (or wherever your Mautic build maps
    `plugins/` to -- check `composer.json`'s `install-directory-name`).
 2. Run `php bin/console cache:clear` and reload Mautic's Plugins page (or
    `php bin/console mautic:plugins:reload` if your Mautic version has it) so
