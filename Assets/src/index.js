@@ -1,6 +1,97 @@
-import { getOrCreateConsentRuntime } from 'c15t';
+import { getOrCreateConsentRuntime, policyPackPresets } from 'c15t';
 import { packagedScripts } from './scripts.js';
 import { mountConsentUI } from './banner.js';
+
+/**
+ * Builds the `policyPacks` array getOrCreateConsentRuntime() consumes
+ * (c15t.com/docs/frameworks/javascript/concepts/policy-packs /
+ * .../concepts/consent-models) from Controller/PublicController.php's own
+ * `consentMode`/`policyPacks` config keys -- see Form/Type/ConfigType.php's
+ * own comment for why these are two separate admin fields rather than one.
+ *
+ * consentMode === 'policy_pack': map each selected preset NAME (e.g.
+ * 'europeOptIn') to the real policyPackPresets[name]() call -- unknown
+ * names are skipped defensively rather than throwing, same posture as
+ * resolveScripts() below for unknown packaged integrations.
+ *
+ * Any other consentMode ('opt-in'/'opt-out'/'iab'/'none'): build ONE
+ * hand-written global policy entry with no region restriction
+ * (`match: { isDefault: true }`), using the custom-policy object shape
+ * documented on the policy-packs page (id/match/consent/ui) -- there is
+ * no simpler standalone "just set the model" init option; a raw model
+ * only means something inside a policy entry.
+ *
+ * UNVERIFIED against a live build (see this plugin's own README "Local
+ * validation caveat"): (1) whether `policyPacks` is genuinely the correct
+ * top-level init option name for hosted mode -- c15t's own quickstart
+ * builds the array but doesn't show the exact call it's passed into, and
+ * a separate mention of `offlinePolicy.policyPacks` suggests the option
+ * may be nested differently, or differently-named, for hosted vs. offline
+ * mode; (2) the disabled model's literal value -- the consent-models page
+ * lists it as JS `null`, but the custom-policy object example on the
+ * policy-packs page uses the string 'none' instead; 'none' is used here
+ * since it's what the actual object-shape example shows and is
+ * JSON-round-trippable through window.__C15T_SITE_CONFIG__ unambiguously
+ * (unlike `null`, which collides with "field omitted").
+ */
+function buildPolicyPacks(siteConfig) {
+  if ('policy_pack' === siteConfig.consentMode) {
+    return (siteConfig.policyPacks || [])
+      .map((name) => {
+        const preset = policyPackPresets[name];
+        if (!preset) {
+          console.warn(`[c15t] unknown policy pack "${name}" -- skipping`);
+          return null;
+        }
+        return preset();
+      })
+      .filter(Boolean);
+  }
+
+  const model = siteConfig.consentMode || 'opt-in';
+  return [
+    {
+      id: 'global',
+      match: { isDefault: true },
+      consent: { model, categories: siteConfig.consentCategories },
+      // siteConfig.initialUi (Controller/PublicController.php's own
+      // 'initial_ui' field) only applies here, to the hand-written global
+      // policy -- a named policy pack preset (europeIab etc.) carries its
+      // own ui.mode from c15t itself, not overridden.
+      ui: { mode: 'none' === model ? 'none' : siteConfig.initialUi || 'banner' },
+    },
+  ];
+}
+
+/**
+ * Reload-on-restrict (Controller/PublicController.php's own
+ * 'reload_on_restrict' field) -- registered as an onConsentChanged
+ * callback (c15t.com/docs/frameworks/javascript/callbacks), which per
+ * c15t's own docs fires "only after an explicit saveConsents() or
+ * setConsent() that actually changes the saved consent state." A change
+ * counts as MORE RESTRICTIVE when any category present in
+ * previousAllowedCategories is absent from the new allowedCategories --
+ * i.e. something that was allowed got revoked. Widening consent (opting
+ * into something new) never reloads; only revocation does, since that's
+ * the case where an already-loaded third-party script may have left
+ * state behind a reload is needed to clear.
+ */
+function buildCallbacks(siteConfig) {
+  if (!siteConfig.reloadOnRestrict) {
+    return undefined;
+  }
+
+  return {
+    onConsentChanged: ({ allowedCategories, previousAllowedCategories }) => {
+      const becameMoreRestrictive = (previousAllowedCategories || []).some(
+        (category) => !(allowedCategories || []).includes(category),
+      );
+      if (becameMoreRestrictive) {
+        window.location.reload();
+      }
+    },
+  };
+}
 
 /**
  * Entry point for Assets/build/consent-bundle.js (built via `npm run
@@ -42,10 +133,15 @@ if (!siteConfig) {
     backendURL: siteConfig.backendURL,
     consentCategories: siteConfig.consentCategories,
     scripts: resolveScripts(siteConfig.scripts || []),
+    policyPacks: buildPolicyPacks(siteConfig),
+    callbacks: buildCallbacks(siteConfig),
   });
 
   mountConsentUI(consentStore, {
     disableDefaultCss: Boolean(siteConfig.disableDefaultCss),
+    enableFocusTrap: siteConfig.enableFocusTrap !== false,
+    bannerText: siteConfig.bannerText || '',
+    modalText: siteConfig.modalText || '',
   });
 
   // Public re-open API -- a visitor who already made a choice gets no
@@ -57,6 +153,14 @@ if (!siteConfig) {
   // dist/index.js's setActiveUI), so no options are needed here.
   window.wdConsent = {
     openPreferences: () => consentStore.getState().setActiveUI('dialog'),
+    // Lets an embedding app link its own logged-in user identity to the
+    // anonymous consent record once authenticated
+    // (c15t.com/docs/frameworks/javascript/api/location-info#identifyuseruser)
+    // -- e.g. window.wdConsent.identifyUser({ id, identityProvider }) from
+    // the app's own auth-success handler. Only meaningful once a visitor
+    // has actually authenticated; not called from anywhere in this bundle
+    // itself.
+    identifyUser: (user) => consentStore.getState().identifyUser(user),
   };
 
   // Declarative trigger -- lets a site add a plain

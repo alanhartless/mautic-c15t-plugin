@@ -52,6 +52,7 @@ export const DEFAULT_CSS = `
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  margin-top: 15px;
 }
 
 [data-wd-consent] button {

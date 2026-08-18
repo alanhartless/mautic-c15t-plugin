@@ -36,6 +36,17 @@ class ConfigType extends AbstractType
             ],
         ]);
 
+        $builder->add('test_domains', TextareaType::class, [
+            'label'      => 'mautic.c15t.config.test_domains',
+            'label_attr' => ['class' => 'control-label'],
+            'required'   => false,
+            'attr'       => [
+                'class'   => 'form-control',
+                'rows'    => 4,
+                'tooltip' => $this->translator->trans('mautic.c15t.config.test_domains.tooltip'),
+            ],
+        ]);
+
         $builder->add('backend_url', TextType::class, [
             'label'      => 'mautic.c15t.config.backend_url',
             'label_attr' => ['class' => 'control-label'],
@@ -69,6 +80,116 @@ class ConfigType extends AbstractType
             'label' => 'mautic.c15t.config.disable_default_css',
             'attr'  => [
                 'tooltip' => $this->translator->trans('mautic.c15t.config.disable_default_css.tooltip'),
+            ],
+        ]);
+
+        $builder->add('reload_on_restrict', YesNoButtonGroupType::class, [
+            'label' => 'mautic.c15t.config.reload_on_restrict',
+            'attr'  => [
+                'tooltip' => $this->translator->trans('mautic.c15t.config.reload_on_restrict.tooltip'),
+            ],
+        ]);
+
+        $builder->add('initial_ui', ChoiceType::class, [
+            'label'      => 'mautic.c15t.config.initial_ui',
+            'label_attr' => ['class' => 'control-label'],
+            'required'   => false,
+            'multiple'   => false,
+            'expanded'   => false,
+            'choices'    => [
+                'mautic.c15t.initial_ui.banner' => 'banner',
+                'mautic.c15t.initial_ui.dialog' => 'dialog',
+            ],
+            'attr' => [
+                'class'   => 'form-control',
+                'tooltip' => $this->translator->trans('mautic.c15t.config.initial_ui.tooltip'),
+            ],
+        ]);
+
+        $builder->add('enable_focus_trap', YesNoButtonGroupType::class, [
+            'label' => 'mautic.c15t.config.enable_focus_trap',
+            'attr'  => [
+                'tooltip' => $this->translator->trans('mautic.c15t.config.enable_focus_trap.tooltip'),
+            ],
+        ]);
+
+        $builder->add('banner_text', TextareaType::class, [
+            'label'      => 'mautic.c15t.config.banner_text',
+            'label_attr' => ['class' => 'control-label'],
+            'required'   => false,
+            'attr'       => [
+                'class'       => 'form-control',
+                'rows'        => 3,
+                'placeholder' => 'We use cookies to run this site and, if you agree, to measure usage and show relevant marketing.',
+                'tooltip'     => $this->translator->trans('mautic.c15t.config.banner_text.tooltip'),
+            ],
+        ]);
+
+        $builder->add('modal_text', TextareaType::class, [
+            'label'      => 'mautic.c15t.config.modal_text',
+            'label_attr' => ['class' => 'control-label'],
+            'required'   => false,
+            'attr'       => [
+                'class'       => 'form-control',
+                'rows'        => 3,
+                'placeholder' => 'Choose which categories of cookies you allow. Necessary cookies are always on.',
+                'tooltip'     => $this->translator->trans('mautic.c15t.config.modal_text.tooltip'),
+            ],
+        ]);
+
+        // Consent mode + policy packs (c15t.com/docs/frameworks/javascript/
+        // concepts/consent-models, .../policy-packs) -- two related but
+        // distinct c15t concepts, deliberately kept as two fields rather
+        // than one combined list: 'consent_mode' picks either one of the
+        // four raw models applied globally (no region restriction) or
+        // switches to "Policy Pack" mode; 'policy_packs' (the five named,
+        // region-aware presets) only takes effect when consent_mode is set
+        // to 'policy_pack' -- Assets/src/index.js is what actually enforces
+        // that gating at runtime (this field intentionally always renders,
+        // so a site can pre-select packs before flipping the mode, rather
+        // than needing admin-side conditional show/hide JS for a v1).
+        $builder->add('consent_mode', ChoiceType::class, [
+            'label'      => 'mautic.c15t.config.consent_mode',
+            'label_attr' => ['class' => 'control-label'],
+            'required'   => false,
+            'multiple'   => false,
+            'expanded'   => false,
+            'choices'    => [
+                'mautic.c15t.consent_mode.opt_in'      => 'opt-in',
+                'mautic.c15t.consent_mode.opt_out'     => 'opt-out',
+                'mautic.c15t.consent_mode.iab'         => 'iab',
+                'mautic.c15t.consent_mode.disabled'    => 'none',
+                'mautic.c15t.consent_mode.policy_pack' => 'policy_pack',
+            ],
+            'attr' => [
+                'class'   => 'form-control',
+                'tooltip' => $this->translator->trans('mautic.c15t.config.consent_mode.tooltip'),
+            ],
+        ]);
+
+        $builder->add('policy_packs', ChoiceType::class, [
+            'label'      => 'mautic.c15t.config.policy_packs',
+            'label_attr' => ['class' => 'control-label'],
+            'required'   => false,
+            'multiple'   => true,
+            'expanded'   => false,
+            // Order is meaningful (first region match wins) and this fixed
+            // choices order is what determines it regardless of click
+            // order -- browsers report a <select multiple>'s selected
+            // values in option-definition order, not selection order.
+            // worldNoBanner deliberately listed last -- it's the
+            // catch-all, so it should only ever be evaluated after every
+            // named region has had a chance to match first.
+            'choices' => [
+                'mautic.c15t.policy_pack.europe_opt_in'      => 'europeOptIn',
+                'mautic.c15t.policy_pack.europe_iab'         => 'europeIab',
+                'mautic.c15t.policy_pack.california_opt_out' => 'californiaOptOut',
+                'mautic.c15t.policy_pack.quebec_opt_in'      => 'quebecOptIn',
+                'mautic.c15t.policy_pack.world_no_banner'    => 'worldNoBanner',
+            ],
+            'attr' => [
+                'class'   => 'form-control',
+                'tooltip' => $this->translator->trans('mautic.c15t.config.policy_packs.tooltip'),
             ],
         ]);
 

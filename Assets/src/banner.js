@@ -55,7 +55,11 @@ function injectStyles() {
 /**
  * Traps Tab/Shift+Tab within `container`, moves focus to its first
  * focusable element, and restores focus to `returnFocusTo` on cleanup.
- * Returns a cleanup function.
+ * Returns a cleanup function. Only called at all when the
+ * 'enable_focus_trap' config field is on (default) -- see
+ * mountConsentUI()'s own destructured options and its two call sites
+ * below; skipping the call skips both the trap AND the initial-focus
+ * placement together, not just the Tab-cycling behavior.
  */
 function trapFocus(container, returnFocusTo) {
   const focusable = () =>
@@ -90,8 +94,17 @@ function trapFocus(container, returnFocusTo) {
   };
 }
 
+const DEFAULT_BANNER_TEXT =
+  'We use cookies to run this site and, if you agree, to measure usage and show relevant marketing.';
+const DEFAULT_MODAL_TEXT = 'Choose which categories of cookies you allow. Necessary cookies are always on.';
+
 export function mountConsentUI(consentStore, options = {}) {
-  const { disableDefaultCss = false } = options;
+  const {
+    disableDefaultCss = false,
+    enableFocusTrap = true,
+    bannerText = '',
+    modalText = '',
+  } = options;
   if (!disableDefaultCss) injectStyles();
 
   let root = document.getElementById('wd-consent-root');
@@ -131,7 +144,7 @@ export function mountConsentUI(consentStore, options = {}) {
 
     const text = document.createElement('p');
     text.id = 'wd-consent-banner-text';
-    text.textContent = 'We use cookies to run this site and, if you agree, to measure usage and show relevant marketing.';
+    text.textContent = bannerText || DEFAULT_BANNER_TEXT;
     banner.appendChild(text);
 
     const actions = document.createElement('div');
@@ -150,7 +163,7 @@ export function mountConsentUI(consentStore, options = {}) {
     banner.appendChild(actions);
     root.appendChild(banner);
 
-    cleanupTrap = trapFocus(banner, lastFocused);
+    if (enableFocusTrap) cleanupTrap = trapFocus(banner, lastFocused);
   }
 
   function renderDialog(state) {
@@ -169,6 +182,12 @@ export function mountConsentUI(consentStore, options = {}) {
     title.id = 'wd-consent-dialog-title';
     title.textContent = 'Manage cookie preferences';
     dialog.appendChild(title);
+
+    const intro = document.createElement('p');
+    intro.id = 'wd-consent-dialog-text';
+    intro.textContent = modalText || DEFAULT_MODAL_TEXT;
+    dialog.appendChild(intro);
+    dialog.setAttribute('aria-describedby', 'wd-consent-dialog-text');
 
     const categories = state.consentCategories && state.consentCategories.length > 0
       ? state.consentCategories
@@ -227,7 +246,7 @@ export function mountConsentUI(consentStore, options = {}) {
     overlay.appendChild(dialog);
     root.appendChild(overlay);
 
-    cleanupTrap = trapFocus(dialog, lastFocused);
+    if (enableFocusTrap) cleanupTrap = trapFocus(dialog, lastFocused);
   }
 
   function makeButton(text, onClick, primary = false) {

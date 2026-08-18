@@ -76,8 +76,17 @@ class PublicController extends CommonController
             return new Response('// c15t: no backend_url configured (Configuration -> Consent Manager (c15t))', 500, ['Content-Type' => 'application/javascript']);
         }
 
+        // Independent of the 'domains' allowlist just checked above -- a
+        // site can be a test domain without also needing to be listed
+        // there, and vice versa (see Translations/en_US/messages.ini's own
+        // tooltip text). Only changes which client mode the requesting
+        // site's browser initializes with; every other config (categories,
+        // consent mode, integrations) still applies the same either way.
+        $testDomains = $this->parseDomains((string) $coreParametersHelper->get('test_domains', ''));
+        $mode        = in_array($requestOrigin, $testDomains, true) ? 'offline' : 'hosted';
+
         $bundleJs    = $this->readPrebuiltBundle();
-        $bootstrapJs = $this->buildBootstrapJs($coreParametersHelper, $registry, $backendUrl);
+        $bootstrapJs = $this->buildBootstrapJs($coreParametersHelper, $registry, $backendUrl, $mode);
 
         // Config MUST come first -- the bundle reads window.__C15T_SITE_CONFIG__
         // at load time to initialize itself (Assets/src/index.js's own top-level
@@ -158,7 +167,7 @@ class PublicController extends CommonController
      * for anything not in the packaged list, unchanged in shape from the
      * original design (see this plugin's own README for that JSON shape).
      */
-    private function buildBootstrapJs(CoreParametersHelper $coreParametersHelper, IntegrationRegistry $registry, string $backendUrl): string
+    private function buildBootstrapJs(CoreParametersHelper $coreParametersHelper, IntegrationRegistry $registry, string $backendUrl, string $mode): string
     {
         $categories = (array) $coreParametersHelper->get('categories', ['necessary']);
         if (!in_array('necessary', $categories, true)) {
@@ -212,11 +221,20 @@ class PublicController extends CommonController
         }
 
         $config = [
-            'mode'              => 'hosted',
+            // 'offline' for requests from a configured test domain, else
+            // 'hosted' -- see loaderAction()'s own resolution of $mode.
+            'mode'              => $mode,
             'backendURL'        => $backendUrl,
             'consentCategories' => array_values($categories),
             'scripts'           => $scripts,
             'disableDefaultCss' => (bool) $coreParametersHelper->get('disable_default_css', false),
+            'consentMode'       => (string) $coreParametersHelper->get('consent_mode', 'opt-in'),
+            'policyPacks'       => array_values((array) $coreParametersHelper->get('policy_packs', [])),
+            'reloadOnRestrict'  => (bool) $coreParametersHelper->get('reload_on_restrict', false),
+            'initialUi'         => (string) $coreParametersHelper->get('initial_ui', 'banner'),
+            'enableFocusTrap'   => (bool) $coreParametersHelper->get('enable_focus_trap', true),
+            'bannerText'        => (string) $coreParametersHelper->get('banner_text', ''),
+            'modalText'         => (string) $coreParametersHelper->get('modal_text', ''),
         ];
 
         return sprintf(

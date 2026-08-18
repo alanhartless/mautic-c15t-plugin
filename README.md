@@ -23,12 +23,46 @@ once a visitor consents to the relevant category.
 4. Configuration -> **Consent Manager (c15t)** -- fill in:
    - **Allowed domains** -- one per line, every site that will embed this
      instance's `/consent.js`.
+   - **Test domains** -- one per line, independent of Allowed domains above
+     (a domain doesn't need to be on both lists). Sites here still get
+     served `/consent.js` normally, but the consent runtime initializes in
+     [offline mode](https://c15t.com/docs/frameworks/javascript/concepts/client-modes)
+     instead of hosted -- no calls to the c15t backend, consent state stays
+     local to the browser. Useful for staging/QA sites that shouldn't write
+     real consent records into your production c15t database.
    - **c15t backend URL** -- your self-hosted c15t backend's base URL,
-     e.g. `https://consent.example.com/api/c15t`.
+     e.g. `https://consent.example.com/api` (whatever `basePath` your
+     c15t backend was configured with -- `/api` is a natural choice on a
+     dedicated subdomain that hosts nothing else).
    - **Consent categories** -- multi-select of which categories the
      banner offers (`necessary` is always included).
+   - **Consent mode** -- how consent is governed
+     ([c15t's consent-models docs](https://c15t.com/docs/frameworks/javascript/concepts/consent-models)):
+     one of the four global models (`opt-in`, `opt-out`, `iab`, or
+     disabled/no banner) applied everywhere, or **Policy Pack** to switch
+     to region-specific rules using the field below.
+   - **Policy packs** -- only takes effect when Consent mode above is set
+     to Policy Pack
+     ([c15t's policy-packs docs](https://c15t.com/docs/frameworks/javascript/concepts/policy-packs)):
+     multi-select of the named regional presets (Europe opt-in, Europe IAB,
+     California opt-out, Quebec opt-in, everywhere-else no-banner),
+     evaluated in the fixed order listed -- the first matching region wins,
+     with the "everywhere else" pack always evaluated last.
    - **Disable default banner styling** -- turn on if a site will supply
      its own CSS instead.
+   - **Initial consent UI** -- banner (default) or dialog, for a first-time
+     visitor's very first prompt. Only applies to the four global consent
+     models; a named policy pack carries its own UI mode from c15t itself.
+   - **Trap focus in the consent banner/dialog** -- on by default. Keeps
+     Tab/Shift+Tab cycling within the open banner/dialog instead of
+     escaping into the rest of the page.
+   - **Reload page on more restrictive consent** -- off by default. When a
+     returning visitor revokes a previously-allowed category, reloads the
+     page instead of relying on already-loaded third-party scripts to tear
+     themselves down cleanly in place.
+   - **Banner text** / **Manage preferences dialog text** -- optional,
+     override the default copy shown in the first-time banner and,
+     separately, at the top of the "Manage cookie preferences" dialog.
    - One panel per packaged integration (Mautic tracking, GA4, GTM,
      PostHog, Meta/Reddit/TikTok pixels, LinkedIn Insight Tag, X pixel) --
      each has its own enable toggle and its own parameter field(s) (e.g.
@@ -159,3 +193,7 @@ npm run build   # -> Assets/build/consent-bundle.js
 ```
 
 Re-run and commit the result whenever anything under `Assets/src/` changes.
+
+## Local validation caveat
+
+**Consent mode / policy packs, unverified against a live build** (`Assets/src/index.js`'s own `buildPolicyPacks()`): (1) whether `policyPacks` is genuinely the correct top-level option name to pass into `getOrCreateConsentRuntime()` for hosted mode -- c15t's own quickstart builds the array but doesn't show the exact call it's passed into, and a separate doc mention of `offlinePolicy.policyPacks` suggests the option may be nested or named differently for hosted vs. offline mode; (2) the disabled model's literal value -- c15t's consent-models page lists it as JS `null`, but the custom-policy object shape shown on the policy-packs page uses the string `'none'` instead. This plugin uses `'none'` (matches the actual object-shape example, and is unambiguous through the JSON round-trip via `window.__C15T_SITE_CONFIG__`, unlike `null`). Confirm both against a real running banner before relying on non-default consent modes/policy packs in production.
