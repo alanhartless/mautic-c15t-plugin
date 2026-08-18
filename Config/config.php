@@ -27,7 +27,7 @@ return [
     'name'        => 'c15t Consent Manager',
     'description' => 'Self-hosted consent management (c15t) -- serves one embeddable loader script per site, gates Mautic tracking on consent, manages per-site script-loader integrations.',
     'version'     => '1.0',
-    'author'      => 'alanhartless',
+    'author'      => 'Alan Hartless',
 
     // Defaults for the Configuration -> Consent Manager (c15t) screen's
     // fields (EventListener/ConfigSubscriber.php, Form/Type/ConfigType.php)
@@ -84,18 +84,19 @@ return [
             'mautic.c15t.integration_registry' => [
                 'class' => MauticPlugin\MauticC15tBundle\Service\IntegrationRegistry::class,
             ],
-            // Form/Type/ConfigType.php now takes real constructor
-            // dependencies (IntegrationRegistry + translator), unlike its
-            // earlier no-args version -- explicit registration here so
-            // Symfony's form factory resolves the container-managed
-            // instance (carrying those dependencies) rather than trying a
-            // bare `new ConfigType()`, which would hard-fail with "too
-            // few arguments". UNVERIFIED against a live install that
-            // Mautic's plugin service loader applies the tagging a
-            // constructor-injected Form Type needs when registered this
-            // way (vs. core bundles' services.yaml, which gets Symfony's
-            // full autoconfigure pass) -- see this repo's README "Local
-            // validation caveat".
+        ],
+        // The 'forms' bucket is the one that matters here (confirmed
+        // directly against Mautic core's own app/bundles/CoreBundle/
+        // DependencyInjection/Compiler/ServicePass.php, fetched from
+        // mautic/mautic on GitHub): it's the only bucket that auto-applies
+        // the 'form.type' tag Symfony's FormRegistry needs to resolve
+        // Form/Type/ConfigType.php through the container (carrying its
+        // constructor deps) instead of falling back to a bare `new
+        // ConfigType()`, which fails now that the constructor takes real
+        // arguments -- an earlier version of this file registered it
+        // under 'other' instead, which ServicePass's own default case
+        // leaves untagged, and hit exactly that ArgumentCountError.
+        'forms' => [
             'mautic.c15t.form.config' => [
                 'class'     => MauticPlugin\MauticC15tBundle\Form\Type\ConfigType::class,
                 'arguments' => [

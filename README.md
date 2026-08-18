@@ -158,16 +158,6 @@ Two things specifically are unverified and worth checking on first install:
   pattern from a real, currently-shipped Mautic plugin
   (`MauticTagManagerBundle`), not this exact call against a running
   instance.
-- **`ConfigType`'s explicit service registration** (`Config/config.php`'s
-  `services.other.mautic.c15t.form.config` entry) -- `ConfigType` now
-  takes constructor dependencies (`IntegrationRegistry` + `translator`),
-  so Symfony's form factory needs to resolve it via the container rather
-  than `new ConfigType()`. Core bundles' own Form Types get this wiring
-  for free from Symfony's namespace-wide `autoconfigure` pass over their
-  `services.yaml`; it's unconfirmed whether a plugin service declared this
-  way in `config.php` gets the same `form.type` tagging. If the
-  Configuration screen 500s on load after this change, that's the first
-  thing to check.
 - **Twig's `slice`/`starts with`/`ends with`** (`Resources/views/
   FormTheme/Config/_config_c15tconfig_widget.html.twig`) -- used to group
   each packaged integration's fields into its own panel by field-name

@@ -39,13 +39,18 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * substituted in, so the final rendered text is fully translated end to
  * end, not just the compound-key wrapper.
  *
- * Requires this class to actually be autowired by Symfony's form factory
- * (constructor now has real dependencies, unlike its earlier no-args
- * version) -- explicitly registered as a service in Config/config.php
- * rather than left to auto-discovery, since the stakes of getting that
- * wrong are higher now (a broken constructor fails the whole
- * Configuration screen, not just one missing field). UNVERIFIED against
- * a live install -- see this repo's README "Local validation caveat".
+ * Requires this class to be resolved through the container, not
+ * `new ConfigType()` -- registered in Config/config.php's
+ * 'services.forms' bucket specifically, confirmed against Mautic core's
+ * own ServicePass compiler pass (fetched from mautic/mautic on GitHub):
+ * 'forms' is the one bucket that auto-applies the 'form.type' tag
+ * Symfony's FormRegistry needs to route class-name-based type resolution
+ * through the container instead of falling back to a bare `new $class()`
+ * (which fails now that the constructor takes real arguments). An
+ * earlier version registered this under 'other' instead, which
+ * ServicePass's own default case leaves untagged -- hit exactly that
+ * failure on first live deploy (ArgumentCountError, 0 passed, 2
+ * expected).
  */
 class ConfigType extends AbstractType
 {
