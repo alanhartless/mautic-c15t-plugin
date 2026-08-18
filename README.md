@@ -125,7 +125,7 @@ backend itself. See [c15t's own self-host docs](https://c15t.com/docs/self-host/
 
 | Key | Vendor | Required params |
 |---|---|---|
-| `mautic-tracking` | This Mautic instance's own `mtc.js` | `mauticUrl` |
+| `mautic-tracking` | This Mautic instance's own `mtc.js` | _(none -- auto-detected from Mautic's own `site_url` config)_ |
 | `google-tag` | Google Analytics (GA4) | `id` |
 | `google-tag-manager` | Google Tag Manager | `id` |
 | `posthog` | PostHog | `id` (optional `apiHost`) |

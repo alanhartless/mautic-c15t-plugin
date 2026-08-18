@@ -20,10 +20,17 @@ namespace MauticPlugin\MauticC15tBundle\Service;
  * real export is `gtag`) and would also have gotten this param wrong
  * (`id`, not `measurementId`) had it not been checked directly.
  *
- * 'mautic-tracking' takes one param (mauticUrl) -- the tracking domain,
- * unlike the snippet's own structure, DOES vary per installation of this
- * plugin, so it's supplied the same way every other packaged
- * integration's vendor-specific ID is (Assets/src/mautic-tracking.js).
+ * 'mautic-tracking' takes one param (mauticUrl), but unlike every other
+ * packaged integration's params, it is NOT admin-entered -- Mautic already
+ * knows its own base URL (the 'site_url' core config parameter, set during
+ * install / Configuration -> Basic Information), so asking the admin to
+ * retype it on THIS plugin's own Configuration screen would just be a
+ * second place for the two to drift out of sync. A param spec with a
+ * 'source' key (instead of a 'required' key) marks it as auto-filled from
+ * that core parameter: Form/Type/ConfigType.php skips rendering a field
+ * for it, and Controller/PublicController.php reads it straight from
+ * CoreParametersHelper using the core parameter name in 'source', not
+ * from a '{prefix}_{param}' config field.
  *
  * Every 'label' below (both the integration's own and each param's) is a
  * TRANSLATION KEY (Translations/en_US/messages.ini,
@@ -40,7 +47,7 @@ class IntegrationRegistry
     public const RAW_INLINE = 'raw-inline';
 
     /**
-     * @return array<string, array{label: string, category: string, params: array<string, array{type: string, required: bool, label: string}>}>
+     * @return array<string, array{label: string, category: string, params: array<string, array{type: string, required?: bool, label?: string, source?: string}>}>
      */
     public function getPackaged(): array
     {
@@ -49,7 +56,7 @@ class IntegrationRegistry
                 'label'    => 'mautic.c15t.integration.mautic_tracking',
                 'category' => 'measurement',
                 'params'   => [
-                    'mauticUrl' => ['type' => 'text', 'required' => true, 'label' => 'mautic.c15t.integration.mautic_tracking.mautic_url'],
+                    'mauticUrl' => ['type' => 'text', 'source' => 'site_url'],
                 ],
             ],
             'google-tag' => [

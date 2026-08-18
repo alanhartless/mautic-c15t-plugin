@@ -123,6 +123,13 @@ class ConfigType extends AbstractType
             ]);
 
             foreach ($integration['params'] as $paramKey => $paramSpec) {
+                if (isset($paramSpec['source'])) {
+                    // Auto-filled from Mautic's own core config (see
+                    // Service/IntegrationRegistry.php's docblock) --
+                    // nothing for the admin to fill in here.
+                    continue;
+                }
+
                 $paramName = $this->translator->trans($paramSpec['label']);
 
                 $builder->add($prefix.'_'.$paramKey, TextType::class, [
@@ -175,10 +182,13 @@ class ConfigType extends AbstractType
             $prefix = str_replace('-', '_', $key);
             $groups[] = [
                 'enabledField' => $prefix.'_enabled',
-                'paramFields'  => array_map(
+                'paramFields'  => array_values(array_map(
                     static fn (string $paramKey): string => $prefix.'_'.$paramKey,
-                    array_keys($integration['params'])
-                ),
+                    array_keys(array_filter(
+                        $integration['params'],
+                        static fn (array $paramSpec): bool => !isset($paramSpec['source'])
+                    ))
+                )),
             ];
         }
 

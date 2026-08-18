@@ -173,8 +173,13 @@ class PublicController extends CommonController
             }
 
             $params = [];
-            foreach (array_keys($integration['params']) as $paramKey) {
-                $params[$paramKey] = (string) $coreParametersHelper->get($prefix.'_'.$paramKey, '');
+            foreach ($integration['params'] as $paramKey => $paramSpec) {
+                $params[$paramKey] = isset($paramSpec['source'])
+                    // Auto-filled from Mautic's own core config (e.g.
+                    // 'site_url') rather than a per-instance config field
+                    // -- see Service/IntegrationRegistry.php's docblock.
+                    ? (string) $coreParametersHelper->get($paramSpec['source'], '')
+                    : (string) $coreParametersHelper->get($prefix.'_'.$paramKey, '');
             }
 
             // Resolved at runtime by the pre-bundled bundle's own

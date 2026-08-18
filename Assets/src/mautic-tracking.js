@@ -2,11 +2,12 @@
  * Mautic's own tracking bootstrap, wrapped as a script-loader entry
  * (Controller/PublicController.php's 'mautic-tracking' packaged key).
  * Takes `mauticUrl` as a param (Service/IntegrationRegistry.php's own
- * schema for this integration) -- the tracking domain necessarily
- * differs per install of this plugin, so it's supplied per-site via the
- * site profile's own `params`, the same pattern every other packaged
- * integration (meta-pixel's pixelId, google-tag's measurementId) uses --
- * never hardcode a specific installation's Mautic domain here.
+ * schema for this integration) -- unlike every other packaged
+ * integration's params, this one is NOT admin-entered: PublicController.php
+ * auto-fills it from Mautic's own 'site_url' core config parameter, since
+ * that's already this instance's own base URL. Never hardcode a specific
+ * installation's Mautic domain here regardless -- always take it via the
+ * param.
  *
  * *** UNVERIFIED CONTENT *** -- the snippet below is the standard
  * async-loader pattern documented across Mautic's history (queue-stub
