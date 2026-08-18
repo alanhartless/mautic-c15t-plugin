@@ -60,7 +60,7 @@ class ConsentIntegration extends AbstractIntegration
                 'required' => false,
                 'attr'     => [
                     'rows'    => 20,
-                    'tooltip' => 'One entry per embedding domain: allowed origin(s), consent categories, and script-loader integrations. See docs/consent.md for the exact shape and Service/IntegrationRegistry.php for the supported integration keys.',
+                    'tooltip' => 'One entry per embedding domain: allowed origin(s), consent categories, and script-loader integrations. See this plugin\'s own README.md for the exact shape and Service/IntegrationRegistry.php for the supported integration keys.',
                 ],
             ]
         );
