@@ -112,6 +112,21 @@ if (!siteConfig) {
     // storage. c15t's own troubleshooting docs list this as the documented
     // way to force a fresh banner during testing.
     resetConsents: () => consentStore.getState().resetConsents(),
+    // Lets an embedding app gate a feature on a specific consent category
+    // -- e.g. window.ccm.hasConsent('functional') before mounting a
+    // third-party chat widget that needs it. Wraps the store's own
+    // has() condition-evaluator (c15t.com/docs -- accepts a plain category
+    // string, or an {and:[...]}/{or:[...]}/{not:...} condition object for
+    // more complex checks); a plain category string covers the common case.
+    hasConsent: (category) => consentStore.getState().has(category),
+    // Lets an embedding app react to ANY consent-state change (not just an
+    // explicit save -- the store's own subscribe() fires on every state
+    // transition), e.g. to mount/unmount a feature the moment a category
+    // flips. Returns the store's own unsubscribe function. The callback is
+    // invoked with no arguments deliberately -- callers should re-check
+    // hasConsent() themselves rather than trust a payload shape that could
+    // drift from the store's internals.
+    onConsentChange: (callback) => consentStore.subscribe(() => callback()),
   };
 
   // Declarative trigger -- lets a site add a plain

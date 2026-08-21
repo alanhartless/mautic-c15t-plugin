@@ -174,6 +174,29 @@ where the "no banner" decision is coming from -- see the jurisdiction note
 above; a banner not showing is very often a policy-pack/region match, not
 saved consent state at all).
 
+### Checking / reacting to consent state
+
+Two read-side methods let an embedding app gate its own features on consent without reimplementing c15t's store:
+
+```js
+// Is this category currently granted?
+if (window.ccm.hasConsent('functional')) {
+  mountMyWidget();
+}
+
+// React to ANY change in consent state (not just an explicit save).
+const unsubscribe = window.ccm.onConsentChange(() => {
+  if (window.ccm.hasConsent('functional')) {
+    mountMyWidget();
+  } else {
+    teardownMyWidget();
+  }
+});
+// unsubscribe() when the feature is torn down / the page unloads.
+```
+
+`hasConsent(category)` accepts a plain category string for the common case, or one of c15t's own condition objects (`{ and: [...] }` / `{ or: [...] }` / `{ not: ... }`) for more complex checks — it wraps the store's own `has()` evaluator directly. `onConsentChange(callback)` wraps the store's own `subscribe()` — the callback receives no arguments; re-check `hasConsent()` inside it rather than relying on a payload shape that could drift from the store's internals. Returns the store's own unsubscribe function.
+
 ## Supported packaged integrations
 
 | Key | Vendor | Required params |
