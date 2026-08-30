@@ -174,6 +174,39 @@ where the "no banner" decision is coming from -- see the jurisdiction note
 above; a banner not showing is very often a policy-pack/region match, not
 saved consent state at all).
 
+### Checking / reacting to consent state
+
+Gate a feature on the visitor's consent instead of loading it unconditionally
+-- e.g. only mount a support-chat widget once the "functionality" category is
+granted.
+
+- **`window.ccm.hasConsent(category)`** -- returns `true`/`false` for whether
+  that category is currently granted. Accepts either a bare category string
+  (`window.ccm.hasConsent('measurement')`) or a compound condition object
+  (`{ and: [...] }` / `{ or: [...] }` / `{ not: ... }`), forwarded straight to
+  c15t's own `store.has()`.
+- **`window.ccm.onConsentChange(callback)`** -- subscribes `callback` to any
+  change in consent state (not just a save -- fires on every state
+  transition). Returns an unsubscribe function. `callback` receives no
+  arguments; re-check `hasConsent()` inside it rather than assuming what
+  changed.
+
+```js
+if (window.ccm.hasConsent('functionality')) {
+  mountWidget();
+}
+const unsubscribe = window.ccm.onConsentChange(() => {
+  if (window.ccm.hasConsent('functionality')) mountWidget();
+  else unmountWidget();
+});
+```
+
+Both are assigned once `/consent.js` finishes loading and executing. A script
+tag added with `defer` (recommended) won't fire its `load` event until that's
+done, so wait for that event before calling either of these if you're loading
+the script yourself rather than embedding it via a template that already
+guarantees ordering.
+
 ## Supported packaged integrations
 
 | Key | Vendor | Required params |

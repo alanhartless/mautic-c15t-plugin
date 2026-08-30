@@ -112,6 +112,27 @@ if (!siteConfig) {
     // storage. c15t's own troubleshooting docs list this as the documented
     // way to force a fresh banner during testing.
     resetConsents: () => consentStore.getState().resetConsents(),
+    // hasConsent/onConsentChange -- read-side API for an embedding site's
+    // own JS to gate a feature on consent state (e.g. only mount a
+    // support-chat widget once a visitor has granted the "functionality"
+    // category). See README's "Checking / reacting to consent state"
+    // section. Previously missing from this object entirely --
+    // window.ccm.hasConsent was permanently undefined in every real
+    // deploy, not just "not loaded yet", so any caller gating on it saw
+    // a fail-closed "not granted" state forever, even after the visitor
+    // granted consent.
+    //
+    // hasConsent forwards straight to store.has() -- c15t's own condition
+    // shape (a bare category string, or { and/or/not: [...] } for
+    // compound checks) is exactly what has() already accepts, so no
+    // translation is needed.
+    hasConsent: (category) => consentStore.getState().has(category),
+    // onConsentChange wraps the store's raw subscribe() (which calls its
+    // listener with (state, previousState)) into a no-argument callback --
+    // callers should re-check hasConsent() inside the callback rather
+    // than trust a payload, so the raw state args are deliberately
+    // dropped here rather than forwarded.
+    onConsentChange: (callback) => consentStore.subscribe(() => callback()),
   };
 
   // Declarative trigger -- lets a site add a plain
