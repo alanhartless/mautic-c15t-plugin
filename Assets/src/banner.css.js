@@ -121,6 +121,24 @@ export const DEFAULT_CSS = `
 [data-ccm-category] label {
   font-weight: 600;
   font-size: 14px;
+  /* Explicit, not inherited -- the checkbox alignment fix below depends
+     on a known line-height to center against. Without this, the label
+     silently inherits whatever line-height the embedding page's own base
+     styles set, which varies by site and is exactly why the checkbox
+     could visually misalign against the label text on some pages and not
+     others despite this rule never changing. */
+  line-height: 20px;
+}
+
+/* Confirmed live: the checkbox visually floats above the label's text
+   instead of centering against its first line -- align-items: flex-start
+   on the row above (needed so a taller multi-line description doesn't
+   drag the checkbox down with it) top-aligns the checkbox against the
+   label text's own top edge, not its vertical center. A native checkbox
+   renders shorter than the label's 20px line-height, so a small nudge
+   closes the gap. */
+[data-ccm-category] input[type="checkbox"] {
+  margin-top: 3px;
 }
 
 [data-ccm-category] p {
