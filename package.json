@@ -12,8 +12,8 @@
     "node": ">=22.0.0"
   },
   "dependencies": {
-    "c15t": "2.2.1",
-    "@c15t/scripts": "2.2.0"
+    "@c15t/scripts": "2.3.0",
+    "c15t": "2.4.1"
   },
   "devDependencies": {
     "esbuild": "0.28.2"
